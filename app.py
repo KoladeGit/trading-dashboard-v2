@@ -429,8 +429,9 @@ def main():
     # ==========================================================================
     # MAIN TABS
     # ==========================================================================
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📊 Dashboard", 
+        "🤖 Live Bot",
         "📝 Trade Entry", 
         "🎰 Polymarket", 
         "📈 Analytics",
@@ -522,9 +523,99 @@ def main():
                 st.info("No trades yet. Head to 'Trade Entry' to log your first trade!")
     
     # ==========================================================================
-    # TAB 2: TRADE ENTRY
+    # TAB 2: LIVE BOT
     # ==========================================================================
     with tab2:
+        st.subheader("🤖 Automated Trading Bot")
+        
+        # Load bot data
+        try:
+            import os
+            bot_data_path = os.path.join(os.path.dirname(__file__), 'bot_data.json')
+            with open(bot_data_path, 'r') as f:
+                bot_data = json.load(f)
+            
+            last_update = bot_data.get('last_updated', 'Unknown')
+            st.caption(f"Last sync: {last_update}")
+            
+            # Account summary
+            account = bot_data.get('account', {})
+            total_usd = account.get('total_usd', 0)
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("💰 Bot Balance", f"${total_usd:,.2f}")
+            with col2:
+                state = bot_data.get('trading_state', {})
+                daily_pnl = state.get('daily_pnl', 0)
+                st.metric("📊 Daily P&L", f"${daily_pnl:+,.2f}")
+            with col3:
+                daily_trades = state.get('daily_trades', 0)
+                st.metric("🔢 Trades Today", daily_trades)
+            
+            st.divider()
+            
+            # Balances
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("**💼 Holdings**")
+                balances = account.get('balances', [])
+                if balances:
+                    for b in balances:
+                        currency = b.get('currency', '?')
+                        amount = b.get('amount', 0)
+                        usd = b.get('usd_value', 0)
+                        st.markdown(f"• **{currency}**: {amount:.6f} (${usd:.2f})")
+                else:
+                    st.info("No balance data")
+            
+            with col2:
+                st.markdown("**📈 Markets**")
+                markets = bot_data.get('markets', [])
+                if markets:
+                    for m in markets[:5]:
+                        symbol = m.get('symbol', '?')
+                        price = m.get('price', 0)
+                        change = m.get('change_24h', 0)
+                        emoji = "🟢" if change >= 0 else "🔴"
+                        st.markdown(f"{emoji} **{symbol}**: ${price:,.2f} ({change:+.1f}%)")
+                else:
+                    st.info("No market data")
+            
+            st.divider()
+            
+            # Performance
+            perf = bot_data.get('performance', {})
+            if perf.get('total_trades', 0) > 0:
+                st.markdown("**📊 Bot Performance**")
+                p1, p2, p3, p4 = st.columns(4)
+                with p1:
+                    st.metric("Total Trades", perf.get('total_trades', 0))
+                with p2:
+                    st.metric("Win Rate", f"{perf.get('win_rate', 0)}%")
+                with p3:
+                    st.metric("Total P&L", f"${perf.get('total_pnl', 0):+.2f}")
+                with p4:
+                    st.metric("Winning", perf.get('winning_trades', 0))
+            
+            # Recent trades
+            trades = bot_data.get('recent_trades', [])
+            if trades:
+                st.markdown("**📜 Recent Bot Trades**")
+                trades_df = pd.DataFrame(trades[-10:])
+                st.dataframe(trades_df, use_container_width=True, hide_index=True)
+            
+        except FileNotFoundError:
+            st.warning("⚠️ Bot data not found. Waiting for first sync...")
+            st.info("The trading bot syncs data hourly. Check back soon!")
+        except Exception as e:
+            st.error(f"Error loading bot data: {e}")
+    
+    # ==========================================================================
+    # TAB 3: TRADE ENTRY
+    # ==========================================================================
+    with tab3:
         col1, col2 = st.columns(2)
         
         with col1:
@@ -602,9 +693,9 @@ def main():
                 st.info("No open positions to close")
     
     # ==========================================================================
-    # TAB 3: POLYMARKET
+    # TAB 4: POLYMARKET
     # ==========================================================================
-    with tab3:
+    with tab4:
         st.subheader("🎰 Polymarket Live")
         
         col1, col2 = st.columns([2, 1])
@@ -667,9 +758,9 @@ def main():
                 st.info("No markets in watchlist. Browse markets on the left and add some!")
     
     # ==========================================================================
-    # TAB 4: ANALYTICS
+    # TAB 5: ANALYTICS
     # ==========================================================================
-    with tab4:
+    with tab5:
         st.subheader("📈 Performance Analytics")
         
         closed_trades = [t for t in st.session_state.trades if t.get("status") == "Closed"]
@@ -769,9 +860,9 @@ def main():
             st.info("No closed trades yet. Complete some trades to see analytics!")
     
     # ==========================================================================
-    # TAB 5: SETTINGS
+    # TAB 6: SETTINGS
     # ==========================================================================
-    with tab5:
+    with tab6:
         col1, col2 = st.columns(2)
         
         with col1:

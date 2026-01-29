@@ -1,0 +1,25 @@
+{
+  "last_updated": "2026-01-28T23:17:02",
+  "account": {
+    "total_usd": 376.72,
+    "balances": [
+      {"currency": "ETH", "amount": 0.12718547, "usd_value": 375.62},
+      {"currency": "BNB", "amount": 0.00090574, "usd_value": 0.81},
+      {"currency": "USD", "amount": 0.2193, "usd_value": 0.22}
+    ]
+  },
+  "markets": [],
+  "positions": [],
+  "recent_trades": [],
+  "performance": {
+    "total_trades": 0,
+    "winning_trades": 0,
+    "win_rate": 0,
+    "total_pnl": 0
+  },
+  "trading_state": {
+    "daily_trades": 0,
+    "daily_pnl": 0,
+    "starting_balance": 376.72
+  }
+}
