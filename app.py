@@ -624,9 +624,11 @@ def main():
                     with st.expander(f"📊 {title[:80]}...", expanded=False):
                         c1, c2 = st.columns(2)
                         with c1:
-                            st.metric("Volume", f"${volume:,.0f}")
+                            vol_display = f"${volume:,.0f}" if volume else "N/A"
+                            st.metric("Volume", vol_display)
                         with c2:
-                            st.metric("Liquidity", f"${liquidity:,.0f}")
+                            liq_display = f"${liquidity:,.0f}" if liquidity else "N/A"
+                            st.metric("Liquidity", liq_display)
                         
                         if outcomes:
                             for outcome in outcomes[:2]:
