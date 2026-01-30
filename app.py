@@ -21,15 +21,27 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Load real balance from bot_data.json
+def load_real_balance():
+    try:
+        with open('bot_data.json', 'r') as f:
+            data = json.load(f)
+            return data.get('account', {}).get('total_usd', 1000)
+    except:
+        return 1000
+
+REAL_BALANCE = load_real_balance()
+
 # Initialize session state
 if 'trades' not in st.session_state:
     st.session_state.trades = []
 
 if 'allocations' not in st.session_state:
+    # Allocate based on real balance (40/30/30 split)
     st.session_state.allocations = {
-        "News Trading": {"allocated": 400, "used": 0, "available": 400},
-        "Polymarket": {"allocated": 300, "used": 0, "available": 300},
-        "Algorithmic": {"allocated": 300, "used": 0, "available": 300}
+        "News Trading": {"allocated": round(REAL_BALANCE * 0.4, 2), "used": 0, "available": round(REAL_BALANCE * 0.4, 2)},
+        "Polymarket": {"allocated": round(REAL_BALANCE * 0.3, 2), "used": 0, "available": round(REAL_BALANCE * 0.3, 2)},
+        "Algorithmic": {"allocated": round(REAL_BALANCE * 0.3, 2), "used": 0, "available": round(REAL_BALANCE * 0.3, 2)}
     }
 
 if 'positions' not in st.session_state:
