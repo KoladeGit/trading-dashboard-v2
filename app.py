@@ -1,64 +1,55 @@
 #!/usr/bin/env python3
 """
-╔══════════════════════════════════════════════════════════════════════════════╗
-║  TRADING MISSION CONTROL v2.0                                                ║
-║  NASA-STYLE TERMINAL INTERFACE                                               ║
-║  $1K CRYPTO MISSION - ALL SYSTEMS NOMINAL                                    ║
-╚══════════════════════════════════════════════════════════════════════════════╝
+Trading Dashboard - $1K Crypto Mission
+NASA Mission Control Aesthetic
+Tracks allocations, P&L, and positions across 3 prongs
 """
 
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
 import json
-import requests
-from typing import Dict, List, Optional
-import hashlib
 import os
-import re
 
-# =============================================================================
-# PAGE CONFIG - MISSION CONTROL
-# =============================================================================
+# Page config
 st.set_page_config(
-    page_title="MISSION CONTROL v2.0",
-    page_icon="🛰️",
+    page_title="MISSION CONTROL • Trading Dashboard",
+    page_icon="🚀",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# =============================================================================
-# NASA MISSION CONTROL CSS - RETRO TERMINAL AESTHETIC
-# =============================================================================
+# Initialize session state
+if 'trades' not in st.session_state:
+    st.session_state.trades = []
+
+if 'allocations' not in st.session_state:
+    st.session_state.allocations = {
+        "News Trading": {"allocated": 400, "used": 0, "available": 400},
+        "Polymarket": {"allocated": 300, "used": 0, "available": 300},
+        "Algorithmic": {"allocated": 300, "used": 0, "available": 300}
+    }
+
+if 'positions' not in st.session_state:
+    st.session_state.positions = []
+
+# NASA Mission Control CSS with CRT scanlines and retro styling
 st.markdown("""
 <style>
-    /* Import NASA-style monospace fonts */
-    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Fira+Code:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap');
     
-    /* Root variables */
-    :root {
-        --phosphor-green: #00ff41;
-        --phosphor-green-dim: #00cc33;
-        --amber: #ffaa00;
-        --amber-bright: #ff6600;
-        --warning-red: #ff0000;
-        --bg-dark: #0a0a0a;
-        --bg-panel: #0d1117;
-        --bg-terminal: #1a1a2e;
-        --border-color: #00ff4133;
-        --text-dim: #4a5568;
-    }
-    
-    /* Global dark background */
+    /* Global dark theme */
     .stApp {
-        background-color: var(--bg-dark) !important;
+        background: linear-gradient(135deg, #0a0a0a 0%, #111111 100%);
+        color: #39ff14;
+        font-family: 'IBM Plex Mono', monospace !important;
+        position: relative;
     }
     
-    /* CRT Scanline overlay effect */
-    .stApp::before {
+    /* CRT scanlines effect */
+    .stApp::after {
         content: "";
         position: fixed;
         top: 0;
@@ -73,1644 +64,738 @@ st.markdown("""
             transparent 2px
         );
         pointer-events: none;
-        z-index: 9999;
+        z-index: 1000;
+        animation: scanlines 0.1s linear infinite;
     }
     
-    /* CRT flicker animation */
-    @keyframes flicker {
-        0% { opacity: 0.97; }
-        50% { opacity: 1; }
-        100% { opacity: 0.98; }
+    @keyframes scanlines {
+        0% { transform: translateY(0px); }
+        100% { transform: translateY(2px); }
     }
     
-    /* Main container */
-    .main .block-container {
-        padding-top: 1rem;
-        padding-bottom: 2rem;
-        max-width: 100%;
-        animation: flicker 0.15s infinite;
+    /* Headers and text */
+    .main-header {
+        font-size: 2.8rem;
+        font-weight: 700;
+        color: #39ff14;
+        text-shadow: 0 0 10px #39ff14, 0 0 20px #39ff14, 0 0 30px #39ff14;
+        font-family: 'IBM Plex Mono', monospace !important;
+        letter-spacing: 2px;
+        text-align: center;
+        margin-bottom: 10px;
+        text-transform: uppercase;
     }
     
-    /* All text - phosphor green monospace */
-    .stApp, .stApp p, .stApp span, .stApp div, .stApp label {
-        font-family: 'IBM Plex Mono', 'Fira Code', 'Share Tech Mono', monospace !important;
-        color: var(--phosphor-green) !important;
+    .mission-subtitle {
+        font-size: 1.1rem;
+        color: #ff6600;
+        text-align: center;
+        font-weight: 400;
+        margin-bottom: 30px;
+        letter-spacing: 1px;
+        opacity: 0.9;
     }
     
-    /* Headers - uppercase terminal style */
-    h1, h2, h3, h4, h5, h6 {
-        font-family: 'Share Tech Mono', 'IBM Plex Mono', monospace !important;
-        color: var(--phosphor-green) !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.15em !important;
-        text-shadow: 0 0 10px var(--phosphor-green), 0 0 20px var(--phosphor-green-dim);
-    }
-    
-    h1 {
-        font-size: 2rem !important;
-        border-bottom: 2px solid var(--phosphor-green) !important;
-        padding-bottom: 0.5rem !important;
-    }
-    
-    /* Mission Control Panel Styling */
-    .mission-panel {
-        background: linear-gradient(180deg, #0d1117 0%, #1a1a2e 100%);
-        border: 2px solid var(--phosphor-green);
-        border-radius: 0;
-        padding: 1rem;
-        margin-bottom: 1rem;
+    /* Metric cards - Mission Control style */
+    .metric-card {
+        background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
+        border: 1px solid #39ff14;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 10px 0;
         box-shadow: 
-            0 0 10px var(--border-color),
-            inset 0 0 30px rgba(0,255,65,0.03);
+            0 0 15px rgba(57, 255, 20, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
         position: relative;
+        overflow: hidden;
     }
     
-    .mission-panel::before {
+    .metric-card::before {
         content: "";
         position: absolute;
         top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, transparent, var(--phosphor-green), transparent);
+        left: -100%;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #39ff14, transparent);
+        animation: scan 3s linear infinite;
     }
     
-    /* LED Status Indicators */
-    .led-indicator {
-        display: inline-block;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        margin-right: 8px;
-        box-shadow: 0 0 8px currentColor;
+    @keyframes scan {
+        0% { left: -100%; }
+        100% { left: 100%; }
     }
     
-    .led-green {
-        background: var(--phosphor-green);
-        box-shadow: 0 0 10px var(--phosphor-green), 0 0 20px var(--phosphor-green);
+    /* Status indicators */
+    .profit {
+        color: #39ff14;
+        font-weight: bold;
+        text-shadow: 0 0 5px #39ff14;
+    }
+    .loss {
+        color: #ff3333;
+        font-weight: bold;
+        text-shadow: 0 0 5px #ff3333;
+    }
+    .warning {
+        color: #ff6600;
+        font-weight: bold;
+        text-shadow: 0 0 5px #ff6600;
     }
     
-    .led-amber {
-        background: var(--amber);
-        box-shadow: 0 0 10px var(--amber), 0 0 20px var(--amber);
+    /* Sidebar styling */
+    .css-1d391kg {
+        background: linear-gradient(180deg, #0d0d0d 0%, #1a1a1a 100%);
+        border-right: 1px solid #39ff14;
     }
     
-    .led-red {
-        background: var(--warning-red);
-        box-shadow: 0 0 10px var(--warning-red), 0 0 20px var(--warning-red);
+    /* Form inputs */
+    .stSelectbox > div > div {
+        background-color: #1a1a1a !important;
+        border: 1px solid #39ff14 !important;
+        color: #39ff14 !important;
+    }
+    
+    .stTextInput > div > div > input {
+        background-color: #1a1a1a !important;
+        border: 1px solid #39ff14 !important;
+        color: #39ff14 !important;
+    }
+    
+    .stNumberInput > div > div > input {
+        background-color: #1a1a1a !important;
+        border: 1px solid #39ff14 !important;
+        color: #39ff14 !important;
+    }
+    
+    .stTextArea > div > div > textarea {
+        background-color: #1a1a1a !important;
+        border: 1px solid #39ff14 !important;
+        color: #39ff14 !important;
+    }
+    
+    /* Buttons */
+    .stButton > button {
+        background: linear-gradient(145deg, #ff6600, #cc5200);
+        border: 1px solid #ff6600;
+        color: #0a0a0a;
+        font-weight: bold;
+        font-family: 'IBM Plex Mono', monospace;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        box-shadow: 0 0 10px rgba(255, 102, 0, 0.5);
+        transition: all 0.3s ease;
+    }
+    
+    .stButton > button:hover {
+        background: linear-gradient(145deg, #ffaa00, #ff6600);
+        box-shadow: 0 0 15px rgba(255, 102, 0, 0.8);
+        transform: translateY(-1px);
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #0d0d0d;
+        border-bottom: 2px solid #39ff14;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background-color: #1a1a1a;
+        border: 1px solid #39ff14;
+        color: #39ff14 !important;
+        font-family: 'IBM Plex Mono', monospace;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-right: 5px;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(145deg, #39ff14, #2dd60f) !important;
+        color: #0a0a0a !important;
+        box-shadow: 0 0 15px rgba(57, 255, 20, 0.6);
+    }
+    
+    /* Dataframe styling */
+    .dataframe {
+        background-color: #0d0d0d !important;
+        border: 1px solid #39ff14 !important;
+        font-family: 'IBM Plex Mono', monospace !important;
+    }
+    
+    /* Mission critical alerts */
+    .alert-success {
+        background: linear-gradient(145deg, #1a4d1a, #0d330d);
+        border: 1px solid #39ff14;
+        color: #39ff14;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: 'IBM Plex Mono', monospace;
+        text-transform: uppercase;
+        font-weight: bold;
+    }
+    
+    .alert-danger {
+        background: linear-gradient(145deg, #4d1a1a, #330d0d);
+        border: 1px solid #ff3333;
+        color: #ff3333;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: 'IBM Plex Mono', monospace;
+        text-transform: uppercase;
+        font-weight: bold;
+    }
+    
+    .alert-warning {
+        background: linear-gradient(145deg, #4d3d1a, #33280d);
+        border: 1px solid #ff6600;
+        color: #ff6600;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: 'IBM Plex Mono', monospace;
+        text-transform: uppercase;
+        font-weight: bold;
+    }
+    
+    /* Terminal-style background */
+    .terminal-bg {
+        background: #0a0a0a;
+        border: 1px solid #39ff14;
+        border-radius: 5px;
+        padding: 20px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .terminal-bg::before {
+        content: "█";
+        position: absolute;
+        top: 20px;
+        right: 25px;
+        color: #39ff14;
         animation: blink 1s infinite;
     }
     
     @keyframes blink {
         0%, 50% { opacity: 1; }
-        51%, 100% { opacity: 0.3; }
+        51%, 100% { opacity: 0; }
     }
     
-    /* Metric cards - CRT display style */
-    .metric-crt {
-        background: #0d1117;
-        border: 1px solid var(--phosphor-green);
-        border-radius: 0;
-        padding: 1rem;
+    /* Metrics override for dark theme */
+    [data-testid="metric-container"] {
+        background: linear-gradient(145deg, #1a1a1a, #0d0d0d) !important;
+        border: 1px solid #39ff14 !important;
+        padding: 15px !important;
+        border-radius: 8px !important;
+        box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) !important;
+    }
+    
+    [data-testid="metric-container"] > div {
+        color: #39ff14 !important;
+    }
+    
+    [data-testid="metric-container"] [data-testid="metric-label"] {
+        color: #ff6600 !important;
+        font-family: 'IBM Plex Mono', monospace !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        font-size: 0.8rem !important;
+        letter-spacing: 1px !important;
+    }
+    
+    [data-testid="metric-container"] [data-testid="metric-value"] {
+        color: #39ff14 !important;
+        font-family: 'IBM Plex Mono', monospace !important;
+        font-weight: 700 !important;
+        font-size: 1.8rem !important;
+        text-shadow: 0 0 5px #39ff14 !important;
+    }
+    
+    /* Footer styling */
+    .footer {
+        color: #ff6600;
         text-align: center;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .metric-crt::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 200%;
-        height: 100%;
-        background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(0,255,65,0.05),
-            transparent
-        );
-        animation: scan 3s linear infinite;
-    }
-    
-    @keyframes scan {
-        0% { transform: translateX(0); }
-        100% { transform: translateX(50%); }
-    }
-    
-    .metric-crt .label {
-        font-size: 0.7rem;
-        color: var(--text-dim) !important;
-        text-transform: uppercase;
-        letter-spacing: 0.2em;
-        margin-bottom: 0.25rem;
-    }
-    
-    .metric-crt .value {
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: var(--phosphor-green) !important;
-        text-shadow: 0 0 10px var(--phosphor-green);
-        font-family: 'Share Tech Mono', monospace !important;
-    }
-    
-    .metric-crt .value.profit {
-        color: var(--phosphor-green) !important;
-    }
-    
-    .metric-crt .value.loss {
-        color: var(--warning-red) !important;
-        text-shadow: 0 0 10px var(--warning-red);
-    }
-    
-    .metric-crt .value.amber {
-        color: var(--amber) !important;
-        text-shadow: 0 0 10px var(--amber);
-    }
-    
-    .metric-crt .delta {
         font-size: 0.8rem;
-        color: var(--text-dim) !important;
-    }
-    
-    /* Trade row - industrial style */
-    .trade-row {
-        background: #0d1117;
-        border: 1px solid var(--phosphor-green-dim);
-        border-left: 4px solid var(--phosphor-green);
-        padding: 0.75rem 1rem;
-        margin-bottom: 0.5rem;
-        font-family: 'IBM Plex Mono', monospace;
-    }
-    
-    .trade-row.profit {
-        border-left-color: var(--phosphor-green);
-    }
-    
-    .trade-row.loss {
-        border-left-color: var(--warning-red);
-    }
-    
-    .trade-row.open {
-        border-left-color: var(--amber);
-    }
-    
-    /* Strategy card for backtesting */
-    .strategy-card {
-        background: linear-gradient(180deg, #0d1117 0%, #1a1a2e 100%);
-        border: 2px solid var(--phosphor-green);
-        padding: 1.25rem;
-        margin-bottom: 1rem;
-        position: relative;
-    }
-    
-    .strategy-card.active {
-        border-color: var(--phosphor-green);
-        box-shadow: 0 0 20px rgba(0,255,65,0.2);
-    }
-    
-    .strategy-card.testing {
-        border-color: var(--amber);
-        box-shadow: 0 0 20px rgba(255,170,0,0.2);
-    }
-    
-    .strategy-card.deprecated {
-        border-color: var(--warning-red);
+        margin-top: 50px;
         opacity: 0.7;
-    }
-    
-    .strategy-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid var(--phosphor-green-dim);
-    }
-    
-    .strategy-name {
-        font-size: 1.1rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-    }
-    
-    .strategy-status {
-        padding: 0.25rem 0.75rem;
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 0.15em;
-        border: 1px solid;
-    }
-    
-    .status-active {
-        color: var(--phosphor-green) !important;
-        border-color: var(--phosphor-green);
-        background: rgba(0,255,65,0.1);
-    }
-    
-    .status-testing {
-        color: var(--amber) !important;
-        border-color: var(--amber);
-        background: rgba(255,170,0,0.1);
-    }
-    
-    .status-deprecated {
-        color: var(--warning-red) !important;
-        border-color: var(--warning-red);
-        background: rgba(255,0,0,0.1);
-    }
-    
-    /* Tabs - mission control style */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 0;
-        background: #0d1117;
-        border: 1px solid var(--phosphor-green);
-        padding: 0;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        background-color: transparent;
-        border-radius: 0;
-        padding: 12px 24px;
-        border: none;
-        border-right: 1px solid var(--phosphor-green-dim);
-        color: var(--phosphor-green) !important;
-        font-family: 'IBM Plex Mono', monospace !important;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        font-size: 0.85rem;
-    }
-    
-    .stTabs [aria-selected="true"] {
-        background-color: var(--phosphor-green) !important;
-        color: #0a0a0a !important;
-        font-weight: 700;
-    }
-    
-    /* Sidebar - command module */
-    [data-testid="stSidebar"] {
-        background-color: #0d1117 !important;
-        border-right: 2px solid var(--phosphor-green);
-    }
-    
-    [data-testid="stSidebar"] .block-container {
-        padding-top: 1rem;
-    }
-    
-    /* Buttons - industrial switches */
-    .stButton > button {
-        background: #0d1117 !important;
-        border: 2px solid var(--phosphor-green) !important;
-        border-radius: 0 !important;
-        color: var(--phosphor-green) !important;
-        font-family: 'IBM Plex Mono', monospace !important;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        transition: all 0.2s;
-        padding: 0.5rem 1.5rem;
-    }
-    
-    .stButton > button:hover {
-        background: var(--phosphor-green) !important;
-        color: #0a0a0a !important;
-        box-shadow: 0 0 20px var(--phosphor-green);
-    }
-    
-    /* Input fields - terminal input */
-    .stTextInput > div > div > input,
-    .stNumberInput > div > div > input,
-    .stTextArea > div > div > textarea {
-        background: #0d1117 !important;
-        border: 1px solid var(--phosphor-green-dim) !important;
-        border-radius: 0 !important;
-        color: var(--phosphor-green) !important;
-        font-family: 'IBM Plex Mono', monospace !important;
-    }
-    
-    .stTextInput > div > div > input:focus,
-    .stNumberInput > div > div > input:focus,
-    .stTextArea > div > div > textarea:focus {
-        border-color: var(--phosphor-green) !important;
-        box-shadow: 0 0 10px var(--border-color) !important;
-    }
-    
-    /* Select boxes */
-    .stSelectbox > div > div {
-        background: #0d1117 !important;
-        border: 1px solid var(--phosphor-green-dim) !important;
-        border-radius: 0 !important;
-    }
-    
-    /* Progress bars */
-    .stProgress > div > div > div > div {
-        background: var(--phosphor-green) !important;
-        box-shadow: 0 0 10px var(--phosphor-green);
-    }
-    
-    /* Expander */
-    .streamlit-expanderHeader {
-        background: #0d1117 !important;
-        border: 1px solid var(--phosphor-green-dim) !important;
-        border-radius: 0 !important;
-        color: var(--phosphor-green) !important;
-    }
-    
-    /* Dataframe */
-    .stDataFrame {
-        border: 1px solid var(--phosphor-green) !important;
-    }
-    
-    [data-testid="stDataFrame"] {
-        background: #0d1117;
-    }
-    
-    /* Divider */
-    hr {
-        border-color: var(--phosphor-green-dim) !important;
-    }
-    
-    /* Info/Warning boxes */
-    .stAlert {
-        background: #0d1117 !important;
-        border: 1px solid var(--phosphor-green) !important;
-        border-radius: 0 !important;
-        color: var(--phosphor-green) !important;
-    }
-    
-    /* Scrollbar */
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-    
-    ::-webkit-scrollbar-track {
-        background: #0d1117;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-        background: var(--phosphor-green-dim);
-        border-radius: 0;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-        background: var(--phosphor-green);
-    }
-    
-    /* Terminal header */
-    .terminal-header {
-        font-family: 'Share Tech Mono', monospace;
-        font-size: 0.75rem;
-        color: var(--text-dim) !important;
-        text-transform: uppercase;
-        letter-spacing: 0.2em;
-        padding: 0.5rem 0;
-        border-bottom: 1px solid var(--phosphor-green-dim);
-        margin-bottom: 1rem;
-    }
-    
-    /* Blinking cursor */
-    .cursor-blink {
-        animation: cursor-blink 1s step-end infinite;
-    }
-    
-    @keyframes cursor-blink {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0; }
-    }
-    
-    /* Metric widget override */
-    [data-testid="stMetricValue"] {
-        font-family: 'Share Tech Mono', monospace !important;
-        color: var(--phosphor-green) !important;
-        text-shadow: 0 0 10px var(--phosphor-green);
-    }
-    
-    [data-testid="stMetricDelta"] {
-        font-family: 'IBM Plex Mono', monospace !important;
-    }
-    
-    [data-testid="stMetricLabel"] {
-        font-family: 'IBM Plex Mono', monospace !important;
-        text-transform: uppercase;
-        letter-spacing: 0.15em;
-        font-size: 0.75rem !important;
-    }
-    
-    /* Caption text */
-    .stCaption, small {
-        color: var(--text-dim) !important;
-        font-family: 'IBM Plex Mono', monospace !important;
+        font-family: 'IBM Plex Mono', monospace;
+        letter-spacing: 1px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# =============================================================================
-# AUTHENTICATION
-# =============================================================================
-def check_password():
-    """Returns True if user has correct password."""
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
-    
-    if "password" not in st.secrets:
-        return True
-    
-    if st.session_state.authenticated:
-        return True
-    
-    password = st.text_input("[ ACCESS CODE REQUIRED ]", type="password")
-    if password:
-        if hashlib.sha256(password.encode()).hexdigest() == st.secrets.get("password_hash", ""):
-            st.session_state.authenticated = True
-            st.rerun()
-        else:
-            st.error("[ ACCESS DENIED ]")
-    return False
+# Header with Mission Control styling
+st.markdown('<p class="main-header">🚀 MISSION CONTROL TRADING DASHBOARD</p>', unsafe_allow_html=True)
+st.markdown(f'<p class="mission-subtitle">$1K CRYPTO MISSION • LAST UPDATED: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} EST</p>', unsafe_allow_html=True)
 
-# =============================================================================
-# DATA PERSISTENCE
-# =============================================================================
-def init_session_state():
-    """Initialize all session state variables"""
-    defaults = {
-        "trades": [],
-        "positions": [],
-        "alerts": [],
-        "allocations": {
-            "News Trading": {"allocated": 400, "current": 400, "color": "#ff6600"},
-            "Polymarket": {"allocated": 300, "current": 300, "color": "#00ff41"},
-            "Algorithmic": {"allocated": 300, "current": 300, "color": "#ffaa00"}
-        },
-        "settings": {
-            "initial_capital": 1000,
-            "risk_per_trade": 2.0,
-            "telegram_alerts": False
-        },
-        "polymarket_watchlist": [],
-        "last_backup": None
-    }
-    
-    for key, value in defaults.items():
-        if key not in st.session_state:
-            st.session_state[key] = value
+# Create tabs
+tab1, tab2 = st.tabs(["🎯 ACTIVE MISSION", "📊 BACKTESTING STRATEGIES"])
 
-def export_data() -> str:
-    """Export all data to JSON string"""
-    data = {
-        "version": "2.0",
-        "exported_at": datetime.now().isoformat(),
-        "trades": st.session_state.trades,
-        "positions": st.session_state.positions,
-        "alerts": st.session_state.alerts,
-        "allocations": st.session_state.allocations,
-        "settings": st.session_state.settings,
-        "polymarket_watchlist": st.session_state.polymarket_watchlist
-    }
-    return json.dumps(data, indent=2, default=str)
-
-def import_data(json_str: str) -> bool:
-    """Import data from JSON string"""
-    try:
-        data = json.loads(json_str)
-        if data.get("version") != "2.0":
-            st.warning("[ WARNING: DATA VERSION MISMATCH ]")
-        
-        st.session_state.trades = data.get("trades", [])
-        st.session_state.positions = data.get("positions", [])
-        st.session_state.alerts = data.get("alerts", [])
-        st.session_state.allocations = data.get("allocations", st.session_state.allocations)
-        st.session_state.settings = data.get("settings", st.session_state.settings)
-        st.session_state.polymarket_watchlist = data.get("polymarket_watchlist", [])
-        return True
-    except Exception as e:
-        st.error(f"[ IMPORT FAILED: {e} ]")
-        return False
-
-# =============================================================================
-# BACKTESTING DATA PARSER
-# =============================================================================
-def load_backtest_results() -> Dict:
-    """Load and parse backtest results from markdown file"""
-    backtest_path = "/Users/kolade/clawd/memory/research/backtest-results.md"
-    
-    strategies = []
-    
-    try:
-        with open(backtest_path, 'r') as f:
-            content = f.read()
-        
-        # Parse the executive summary table
-        strategies = [
-            {
-                "id": "ALPHA-7",
-                "name": "RSI + VOLUME CONFIRMATION",
-                "rank": 1,
-                "status": "ACTIVE",
-                "avg_return": "+5.15%",
-                "sharpe": 14.64,
-                "max_drawdown": "1.62%",
-                "win_rate": "40.1%",
-                "trades": 32,
-                "summary": "Based on Fear & Greed research - extreme RSI readings + volume spike = capitulation/euphoria signals",
-                "parameters": {
-                    "rsi_period": 14,
-                    "rsi_oversold": 30,
-                    "rsi_overbought": 70,
-                    "volume_multiplier": 1.5,
-                    "volume_lookback": 20
-                },
-                "rules": ["Buy: RSI < 30 AND volume > 1.5x 20-period average", "Sell: RSI > 70 AND volume > 1.5x 20-period average"]
-            },
-            {
-                "id": "ALPHA-12",
-                "name": "MULTI-FACTOR COMPOSITE",
-                "rank": 2,
-                "status": "ACTIVE",
-                "avg_return": "+2.15%",
-                "sharpe": 5.66,
-                "max_drawdown": "1.26%",
-                "win_rate": "33.3%",
-                "trades": 4,
-                "summary": "Combines multiple signals (RSI + Volume + Trend) for higher confidence entries",
-                "parameters": {
-                    "rsi_weight": 1.0,
-                    "volume_weight": 1.0,
-                    "trend_weight": 0.5,
-                    "entry_threshold": 2.0,
-                    "exit_threshold": -2.0
-                },
-                "rules": ["Score-based system: RSI + Volume + Trend", "Buy: Score >= 2", "Sell: Score <= -2"]
-            },
-            {
-                "id": "ALPHA-3",
-                "name": "RSI MEAN REVERSION",
-                "rank": 3,
-                "status": "TESTING",
-                "avg_return": "+2.12%",
-                "sharpe": 6.91,
-                "max_drawdown": "1.76%",
-                "win_rate": "31.6%",
-                "trades": 68,
-                "summary": "Pure contrarian strategy based on Fear & Greed index research",
-                "parameters": {
-                    "rsi_period": 14,
-                    "oversold_cross": 30,
-                    "overbought_cross": 70
-                },
-                "rules": ["Buy: RSI crosses above 30 from below", "Sell: RSI crosses below 70 from above"]
-            },
-            {
-                "id": "BETA-1",
-                "name": "BOLLINGER BAND SQUEEZE",
-                "rank": 4,
-                "status": "TESTING",
-                "avg_return": "-0.15%",
-                "sharpe": -5.06,
-                "max_drawdown": "0.21%",
-                "win_rate": "7.5%",
-                "trades": 22,
-                "summary": "Volatility contraction breakout strategy",
-                "parameters": {
-                    "bb_period": 20,
-                    "bb_std": 2.0,
-                    "squeeze_threshold": 0.5
-                },
-                "rules": ["Buy: Band width contracts then expands upward", "Sell: Band width contracts then expands downward"]
-            },
-            {
-                "id": "BETA-5",
-                "name": "ATR VOLATILITY BREAKOUT",
-                "rank": 5,
-                "status": "DEPRECATED",
-                "avg_return": "-0.50%",
-                "sharpe": -2.59,
-                "max_drawdown": "1.48%",
-                "win_rate": "20.1%",
-                "trades": 50,
-                "summary": "Range breakout using ATR for position sizing",
-                "parameters": {
-                    "atr_period": 14,
-                    "breakout_multiplier": 1.5
-                },
-                "rules": ["Buy: Price breaks above high + ATR*1.5", "Sell: Price breaks below low - ATR*1.5"]
-            },
-            {
-                "id": "GAMMA-2",
-                "name": "EMA CROSSOVER + TREND",
-                "rank": 6,
-                "status": "DEPRECATED",
-                "avg_return": "-5.69%",
-                "sharpe": -11.54,
-                "max_drawdown": "7.50%",
-                "win_rate": "10.2%",
-                "trades": 214,
-                "summary": "Whipsawed in choppy market - excessive trades for small accounts",
-                "parameters": {
-                    "fast_ema": 9,
-                    "slow_ema": 21,
-                    "trend_ema": 50
-                },
-                "rules": ["Buy: Fast EMA crosses above Slow EMA, price above Trend EMA", "Excessive fees - NOT RECOMMENDED"]
-            },
-            {
-                "id": "GAMMA-5",
-                "name": "MACD MOMENTUM",
-                "rank": 7,
-                "status": "DEPRECATED",
-                "avg_return": "-7.21%",
-                "sharpe": -15.85,
-                "max_drawdown": "9.49%",
-                "win_rate": "10.2%",
-                "trades": 310,
-                "summary": "Lagging indicator - entries too late. 310 trades = excessive fees",
-                "parameters": {
-                    "fast": 12,
-                    "slow": 26,
-                    "signal": 9
-                },
-                "rules": ["Buy: MACD crosses above signal", "AVOID for 5m timeframe"]
-            }
-        ]
-        
-        return {
-            "strategies": strategies,
-            "test_period": "30 days (Dec 31, 2025 - Jan 30, 2026)",
-            "assets": ["BTC", "ETH", "SOL"],
-            "account_size": "$350",
-            "data_source": "Binance US 5-minute OHLCV",
-            "last_updated": "2026-01-30"
-        }
-        
-    except FileNotFoundError:
-        return {"strategies": [], "error": "Backtest file not found"}
-    except Exception as e:
-        return {"strategies": [], "error": str(e)}
-
-# =============================================================================
-# POLYMARKET API
-# =============================================================================
-POLYMARKET_API = "https://clob.polymarket.com"
-GAMMA_API = "https://gamma-api.polymarket.com"
-
-@st.cache_data(ttl=60)
-def fetch_polymarket_markets(limit: int = 20) -> List[Dict]:
-    """Fetch trending markets from Polymarket"""
-    try:
-        response = requests.get(
-            f"{GAMMA_API}/markets",
-            params={"limit": limit, "active": True, "closed": False},
-            timeout=10
-        )
-        if response.status_code == 200:
-            return response.json()
-        return []
-    except Exception as e:
-        return []
-
-# =============================================================================
-# HELPER FUNCTIONS
-# =============================================================================
-def calculate_portfolio_metrics() -> Dict:
-    """Calculate comprehensive portfolio metrics"""
-    closed_trades = [t for t in st.session_state.trades if t.get("status") == "Closed"]
-    open_positions = [t for t in st.session_state.trades if t.get("status") == "Open"]
-    
-    total_pnl = sum(t.get("pnl", 0) for t in closed_trades)
-    total_trades = len(closed_trades)
-    winning_trades = len([t for t in closed_trades if t.get("pnl", 0) > 0])
-    losing_trades = len([t for t in closed_trades if t.get("pnl", 0) < 0])
-    
-    win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
-    
-    wins = [t.get("pnl", 0) for t in closed_trades if t.get("pnl", 0) > 0]
-    losses = [t.get("pnl", 0) for t in closed_trades if t.get("pnl", 0) < 0]
-    avg_win = sum(wins) / len(wins) if wins else 0
-    avg_loss = sum(losses) / len(losses) if losses else 0
-    
-    gross_profit = sum(wins)
-    gross_loss = abs(sum(losses))
-    profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf') if gross_profit > 0 else 0
-    
-    initial_capital = st.session_state.settings.get("initial_capital", 1000)
-    current_capital = initial_capital + total_pnl
-    
-    open_exposure = sum(t.get("position_size", 0) for t in open_positions)
-    
-    all_pnls = [t.get("pnl", 0) for t in closed_trades]
-    best_trade = max(all_pnls) if all_pnls else 0
-    worst_trade = min(all_pnls) if all_pnls else 0
-    
-    prong_pnl = {}
-    for prong in st.session_state.allocations.keys():
-        prong_trades = [t for t in closed_trades if t.get("prong") == prong]
-        prong_pnl[prong] = sum(t.get("pnl", 0) for t in prong_trades)
-    
-    return {
-        "total_pnl": total_pnl,
-        "total_pnl_pct": (total_pnl / initial_capital * 100) if initial_capital > 0 else 0,
-        "current_capital": current_capital,
-        "total_trades": total_trades,
-        "winning_trades": winning_trades,
-        "losing_trades": losing_trades,
-        "win_rate": win_rate,
-        "avg_win": avg_win,
-        "avg_loss": avg_loss,
-        "profit_factor": profit_factor,
-        "open_positions": len(open_positions),
-        "open_exposure": open_exposure,
-        "best_trade": best_trade,
-        "worst_trade": worst_trade,
-        "prong_pnl": prong_pnl
-    }
-
-def add_trade(trade_data: Dict):
-    """Add a new trade and update allocations"""
-    trade_data["id"] = len(st.session_state.trades) + 1
-    trade_data["created_at"] = datetime.now().isoformat()
-    trade_data["status"] = "Open"
-    trade_data["pnl"] = 0
-    trade_data["pnl_pct"] = 0
-    
-    prong = trade_data.get("prong")
-    size = trade_data.get("position_size", 0)
-    if prong in st.session_state.allocations:
-        st.session_state.allocations[prong]["current"] -= size
-    
-    st.session_state.trades.append(trade_data)
-    return trade_data
-
-def close_trade(trade_id: int, exit_price: float, notes: str = ""):
-    """Close a trade and calculate P&L"""
-    for trade in st.session_state.trades:
-        if trade.get("id") == trade_id and trade.get("status") == "Open":
-            entry = trade.get("entry_price", 0)
-            size = trade.get("position_size", 0)
-            direction = 1 if trade.get("direction") == "Long" else -1
-            
-            if trade.get("prong") == "Polymarket":
-                pnl = (exit_price - entry) * size * direction
-                pnl_pct = ((exit_price - entry) / entry * 100 * direction) if entry > 0 else 0
-            else:
-                pnl_pct = ((exit_price - entry) / entry * 100 * direction) if entry > 0 else 0
-                pnl = size * (pnl_pct / 100)
-            
-            trade["status"] = "Closed"
-            trade["exit_price"] = exit_price
-            trade["pnl"] = pnl
-            trade["pnl_pct"] = pnl_pct
-            trade["closed_at"] = datetime.now().isoformat()
-            trade["close_notes"] = notes
-            
-            prong = trade.get("prong")
-            if prong in st.session_state.allocations:
-                st.session_state.allocations[prong]["current"] += size
-            
-            return trade
-    return None
-
-def render_led(status: str) -> str:
-    """Render an LED indicator based on status"""
-    if status == "ACTIVE":
-        return '<span class="led-indicator led-green"></span>'
-    elif status == "TESTING":
-        return '<span class="led-indicator led-amber"></span>'
-    else:
-        return '<span class="led-indicator led-red"></span>'
-
-# =============================================================================
-# MAIN APPLICATION
-# =============================================================================
-def main():
-    init_session_state()
-    
-    # =========================================================================
-    # MISSION CONTROL HEADER
-    # =========================================================================
-    st.markdown("""
-    <div style="text-align: center; padding: 1rem 0; border: 2px solid #00ff41; margin-bottom: 1.5rem; background: #0d1117;">
-        <div style="font-size: 0.7rem; color: #4a5568; letter-spacing: 0.3em; margin-bottom: 0.5rem;">
-            NATIONAL TRADING ADMINISTRATION
-        </div>
-        <div style="font-size: 2rem; font-weight: 700; letter-spacing: 0.2em; text-shadow: 0 0 20px #00ff41;">
-            🛰️ MISSION CONTROL v2.0
-        </div>
-        <div style="font-size: 0.8rem; color: #00ff41; letter-spacing: 0.15em; margin-top: 0.5rem;">
-            $1K CRYPTO MISSION • ALL SYSTEMS NOMINAL
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # System status bar
-    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    st.markdown(f"""
-    <div class="terminal-header" style="display: flex; justify-content: space-between;">
-        <span>SYSTEM TIME: {current_time} EST</span>
-        <span>STATUS: <span style="color: #00ff41;">● OPERATIONAL</span></span>
-        <span>UPLINK: <span style="color: #00ff41;">CONNECTED</span></span>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Calculate metrics
-    metrics = calculate_portfolio_metrics()
-    
-    # =========================================================================
-    # TOP METRICS - CRT DISPLAYS
-    # =========================================================================
-    m1, m2, m3, m4, m5 = st.columns(5)
-    
-    with m1:
-        pnl_class = "profit" if metrics["total_pnl"] >= 0 else "loss"
-        st.markdown(f"""
-        <div class="metric-crt">
-            <div class="label">TOTAL P&L</div>
-            <div class="value {pnl_class}">${metrics['total_pnl']:+,.2f}</div>
-            <div class="delta">{metrics['total_pnl_pct']:+.1f}%</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with m2:
-        st.markdown(f"""
-        <div class="metric-crt">
-            <div class="label">CURRENT CAPITAL</div>
-            <div class="value">${metrics['current_capital']:,.2f}</div>
-            <div class="delta">INITIAL: ${st.session_state.settings['initial_capital']:,}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with m3:
-        wr_class = "profit" if metrics['win_rate'] >= 50 else "amber"
-        st.markdown(f"""
-        <div class="metric-crt">
-            <div class="label">WIN RATE</div>
-            <div class="value {wr_class}">{metrics['win_rate']:.1f}%</div>
-            <div class="delta">{metrics['winning_trades']}W / {metrics['losing_trades']}L</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with m4:
-        pf_display = f"{metrics['profit_factor']:.2f}" if metrics['profit_factor'] < 100 else "∞"
-        pf_class = "profit" if metrics['profit_factor'] >= 1.5 else ("amber" if metrics['profit_factor'] >= 1 else "loss")
-        st.markdown(f"""
-        <div class="metric-crt">
-            <div class="label">PROFIT FACTOR</div>
-            <div class="value {pf_class}">{pf_display}</div>
-            <div class="delta">AVG WIN: ${metrics['avg_win']:.2f}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with m5:
-        pos_class = "amber" if metrics['open_positions'] > 0 else ""
-        st.markdown(f"""
-        <div class="metric-crt">
-            <div class="label">OPEN POSITIONS</div>
-            <div class="value {pos_class}">{metrics['open_positions']}</div>
-            <div class="delta">${metrics['open_exposure']:.2f} EXPOSED</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # =========================================================================
-    # MAIN NAVIGATION TABS
-    # =========================================================================
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-        "📡 COMMAND", 
-        "🤖 LIVE BOT",
-        "📝 TRADE ENTRY", 
-        "🎰 POLYMARKET",
-        "🧪 BACKTESTING",
-        "📈 ANALYTICS",
-        "⚙️ SYSTEMS"
-    ])
-    
-    # =========================================================================
-    # TAB 1: COMMAND CENTER (DASHBOARD)
-    # =========================================================================
-    with tab1:
-        col1, col2 = st.columns([1, 2])
-        
-        with col1:
-            st.markdown("""
-            <div class="mission-panel">
-                <div style="font-size: 0.8rem; letter-spacing: 0.2em; margin-bottom: 1rem; border-bottom: 1px solid #00ff4133; padding-bottom: 0.5rem;">
-                    💼 CAPITAL ALLOCATION
-                </div>
-            """, unsafe_allow_html=True)
-            
-            for prong, data in st.session_state.allocations.items():
-                allocated = data["allocated"]
-                current = data["current"]
-                used = allocated - current
-                pct = (used / allocated * 100) if allocated > 0 else 0
-                prong_pnl = metrics["prong_pnl"].get(prong, 0)
-                
-                led = "led-green" if prong_pnl >= 0 else "led-red"
-                
-                st.markdown(f"""
-                <div style="margin-bottom: 1rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                        <span><span class="led-indicator {led}"></span>{prong.upper()}</span>
-                        <span style="color: {'#00ff41' if prong_pnl >= 0 else '#ff0000'};">${prong_pnl:+.2f}</span>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                st.progress(pct / 100, text=f"${used:.0f} / ${allocated:.0f}")
-            
-            st.markdown("</div>", unsafe_allow_html=True)
-            
-            # Allocation visualization
-            fig = go.Figure(data=[go.Pie(
-                labels=list(st.session_state.allocations.keys()),
-                values=[d["allocated"] - d["current"] for d in st.session_state.allocations.values()],
-                hole=0.6,
-                marker_colors=['#ff6600', '#00ff41', '#ffaa00'],
-                textinfo='label+percent',
-                textposition='outside',
-                textfont=dict(family='IBM Plex Mono', size=10, color='#00ff41')
-            )])
-            fig.update_layout(
-                showlegend=False,
-                height=250,
-                margin=dict(t=20, b=20, l=20, r=20),
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(family='IBM Plex Mono', color='#00ff41')
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with col2:
-            st.markdown("""
-            <div class="mission-panel">
-                <div style="font-size: 0.8rem; letter-spacing: 0.2em; margin-bottom: 1rem; border-bottom: 1px solid #00ff4133; padding-bottom: 0.5rem;">
-                    📋 MISSION LOG - RECENT OPERATIONS
-                </div>
-            """, unsafe_allow_html=True)
-            
-            if st.session_state.trades:
-                sorted_trades = sorted(
-                    st.session_state.trades, 
-                    key=lambda x: x.get("created_at", ""), 
-                    reverse=True
-                )[:10]
-                
-                for trade in sorted_trades:
-                    status = trade.get("status", "Open")
-                    pnl = trade.get("pnl", 0)
-                    
-                    if status == "Closed":
-                        row_class = "profit" if pnl > 0 else "loss"
-                    else:
-                        row_class = "open"
-                    
-                    direction_indicator = "▲" if trade.get("direction") == "Long" else "▼"
-                    status_text = "OPEN" if status == "Open" else ("+" if pnl >= 0 else "-")
-                    
-                    st.markdown(f"""
-                    <div class="trade-row {row_class}">
-                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
-                            <div>
-                                <span style="color: {'#00ff41' if trade.get('direction') == 'Long' else '#ff6600'};">{direction_indicator}</span>
-                                <strong style="margin-left: 0.5rem;">{trade.get('asset', 'N/A')}</strong>
-                                <span style="color: #4a5568; margin-left: 0.5rem; font-size: 0.75rem;">[{trade.get('prong', '').upper()}]</span>
-                            </div>
-                            <div style="text-align: right;">
-                                <span style="color: #4a5568;">${trade.get('position_size', 0):.2f}</span>
-                                {f'<span style="color: {("#00ff41" if pnl >= 0 else "#ff0000")}; margin-left: 1rem;">${pnl:+.2f}</span>' if status == "Closed" else '<span style="color: #ffaa00; margin-left: 1rem;">ACTIVE</span>'}
-                            </div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-            else:
-                st.markdown("""
-                <div style="text-align: center; padding: 2rem; color: #4a5568;">
-                    [ NO OPERATIONS LOGGED ]<br>
-                    <span style="font-size: 0.8rem;">Proceed to TRADE ENTRY to initiate first operation</span>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            st.markdown("</div>", unsafe_allow_html=True)
-    
-    # =========================================================================
-    # TAB 2: LIVE BOT
-    # =========================================================================
-    with tab2:
-        st.markdown("""
-        <div class="mission-panel">
-            <div style="font-size: 0.8rem; letter-spacing: 0.2em; margin-bottom: 1rem; border-bottom: 1px solid #00ff4133; padding-bottom: 0.5rem;">
-                🤖 AUTOMATED TRADING SYSTEM
-            </div>
-        """, unsafe_allow_html=True)
-        
-        try:
-            bot_data_path = os.path.join(os.path.dirname(__file__), 'bot_data.json')
-            with open(bot_data_path, 'r') as f:
-                bot_data = json.load(f)
-            
-            last_update = bot_data.get('last_updated', 'Unknown')
-            st.markdown(f'<div style="color: #4a5568; font-size: 0.75rem; margin-bottom: 1rem;">LAST SYNC: {last_update}</div>', unsafe_allow_html=True)
-            
-            account = bot_data.get('account', {})
-            total_usd = account.get('total_usd', 0)
-            state = bot_data.get('trading_state', {})
-            
-            b1, b2, b3 = st.columns(3)
-            with b1:
-                st.markdown(f"""
-                <div class="metric-crt">
-                    <div class="label">BOT BALANCE</div>
-                    <div class="value">${total_usd:,.2f}</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with b2:
-                daily_pnl = state.get('daily_pnl', 0)
-                pnl_class = "profit" if daily_pnl >= 0 else "loss"
-                st.markdown(f"""
-                <div class="metric-crt">
-                    <div class="label">DAILY P&L</div>
-                    <div class="value {pnl_class}">${daily_pnl:+,.2f}</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with b3:
-                st.markdown(f"""
-                <div class="metric-crt">
-                    <div class="label">TRADES TODAY</div>
-                    <div class="value amber">{state.get('daily_trades', 0)}</div>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("**[ HOLDINGS ]**")
-                balances = account.get('balances', [])
-                if balances:
-                    for b in balances:
-                        currency = b.get('currency', '?')
-                        amount = b.get('amount', 0)
-                        usd = b.get('usd_value', 0)
-                        st.markdown(f"• **{currency}**: {amount:.6f} (${usd:.2f})")
-                else:
-                    st.markdown("_No balance data_")
-            
-            with col2:
-                st.markdown("**[ MARKET DATA ]**")
-                markets = bot_data.get('markets', [])
-                if markets:
-                    for m in markets[:5]:
-                        symbol = m.get('symbol', '?')
-                        price = m.get('price', 0)
-                        change = m.get('change_24h', 0)
-                        indicator = "▲" if change >= 0 else "▼"
-                        color = "#00ff41" if change >= 0 else "#ff0000"
-                        st.markdown(f'<span style="color: {color};">{indicator}</span> **{symbol}**: ${price:,.2f} ({change:+.1f}%)', unsafe_allow_html=True)
-                else:
-                    st.markdown("_No market data_")
-            
-            trades = bot_data.get('recent_trades', [])
-            if trades:
-                st.markdown("<br>**[ RECENT BOT OPERATIONS ]**", unsafe_allow_html=True)
-                trades_df = pd.DataFrame(trades[-10:])
-                st.dataframe(trades_df, use_container_width=True, hide_index=True)
-                
-        except FileNotFoundError:
-            st.markdown("""
-            <div style="text-align: center; padding: 2rem; border: 1px dashed #ffaa00;">
-                <span style="color: #ffaa00;">⚠ BOT DATA NOT FOUND</span><br>
-                <span style="color: #4a5568; font-size: 0.8rem;">Awaiting first synchronization cycle...</span>
-            </div>
-            """, unsafe_allow_html=True)
-        except Exception as e:
-            st.error(f"[ SYSTEM ERROR: {e} ]")
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-    
-    # =========================================================================
-    # TAB 3: TRADE ENTRY
-    # =========================================================================
-    with tab3:
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("""
-            <div class="mission-panel">
-                <div style="font-size: 0.8rem; letter-spacing: 0.2em; margin-bottom: 1rem; border-bottom: 1px solid #00ff4133; padding-bottom: 0.5rem;">
-                    ➕ INITIATE NEW OPERATION
-                </div>
-            """, unsafe_allow_html=True)
-            
-            with st.form("new_trade", clear_on_submit=True):
-                prong = st.selectbox("STRATEGY PRONG", list(st.session_state.allocations.keys()))
-                asset = st.text_input("TARGET ASSET", placeholder="BTC, ETH, SOL...")
-                
-                c1, c2 = st.columns(2)
-                with c1:
-                    direction = st.selectbox("VECTOR", ["Long", "Short"])
-                with c2:
-                    available = st.session_state.allocations[prong]["current"]
-                    position_size = st.number_input(
-                        f"POSITION SIZE (${available:.0f} AVAIL)", 
-                        min_value=0.0, 
-                        max_value=float(available),
-                        step=10.0
-                    )
-                
-                c1, c2 = st.columns(2)
-                with c1:
-                    entry_price = st.number_input("ENTRY PRICE", min_value=0.0, step=0.0001, format="%.4f")
-                with c2:
-                    target = st.number_input("TARGET PRICE", min_value=0.0, step=0.0001, format="%.4f")
-                
-                stop_loss = st.number_input("STOP LOSS", min_value=0.0, step=0.0001, format="%.4f")
-                thesis = st.text_area("MISSION THESIS", placeholder="Rationale for this operation...")
-                
-                if st.form_submit_button("🚀 EXECUTE TRADE", use_container_width=True):
-                    if asset and position_size > 0:
-                        trade = add_trade({
-                            "prong": prong,
-                            "asset": asset.upper(),
-                            "direction": direction,
-                            "position_size": position_size,
-                            "entry_price": entry_price,
-                            "target": target,
-                            "stop_loss": stop_loss,
-                            "thesis": thesis
-                        })
-                        st.success(f"[ TRADE #{trade['id']} EXECUTED: {direction.upper()} {asset.upper()} ]")
-                        st.rerun()
-                    else:
-                        st.error("[ ERROR: ASSET AND POSITION SIZE REQUIRED ]")
-            
-            st.markdown("</div>", unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown("""
-            <div class="mission-panel">
-                <div style="font-size: 0.8rem; letter-spacing: 0.2em; margin-bottom: 1rem; border-bottom: 1px solid #00ff4133; padding-bottom: 0.5rem;">
-                    🔒 TERMINATE POSITION
-                </div>
-            """, unsafe_allow_html=True)
-            
-            open_trades = [t for t in st.session_state.trades if t.get("status") == "Open"]
-            
-            if open_trades:
-                with st.form("close_trade"):
-                    trade_options = {
-                        f"#{t['id']} - {t['asset']} ({t['direction']}) - ${t['position_size']:.2f}": t 
-                        for t in open_trades
-                    }
-                    selected = st.selectbox("SELECT POSITION", list(trade_options.keys()))
-                    trade = trade_options[selected]
-                    
-                    st.markdown(f"""
-                    <div style="background: #0a0a0a; padding: 0.75rem; border: 1px solid #00ff4133; margin: 0.5rem 0;">
-                        ENTRY: ${trade['entry_price']:.4f} | TARGET: ${trade.get('target', 0):.4f} | STOP: ${trade.get('stop_loss', 0):.4f}
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    exit_price = st.number_input("EXIT PRICE", min_value=0.0, step=0.0001, format="%.4f")
-                    close_notes = st.text_area("CLOSE NOTES", placeholder="Operation outcome...")
-                    
-                    if st.form_submit_button("🔒 CLOSE POSITION", use_container_width=True):
-                        result = close_trade(trade["id"], exit_price, close_notes)
-                        if result:
-                            pnl = result["pnl"]
-                            status = "SUCCESS" if pnl >= 0 else "LOSS"
-                            st.success(f"[ POSITION CLOSED - {status}: ${pnl:+.2f} ({result['pnl_pct']:+.1f}%) ]")
-                            st.rerun()
-            else:
-                st.markdown("""
-                <div style="text-align: center; padding: 2rem; color: #4a5568;">
-                    [ NO ACTIVE POSITIONS ]
-                </div>
-                """, unsafe_allow_html=True)
-            
-            st.markdown("</div>", unsafe_allow_html=True)
-    
-    # =========================================================================
-    # TAB 4: POLYMARKET
-    # =========================================================================
-    with tab4:
-        st.markdown("""
-        <div class="mission-panel">
-            <div style="font-size: 0.8rem; letter-spacing: 0.2em; margin-bottom: 1rem; border-bottom: 1px solid #00ff4133; padding-bottom: 0.5rem;">
-                🎰 PREDICTION MARKET SCANNER
-            </div>
-        """, unsafe_allow_html=True)
-        
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
-            markets = fetch_polymarket_markets(20)
-            
-            if markets:
-                for market in markets[:10]:
-                    title = market.get("question", market.get("title", "Unknown"))
-                    volume = market.get("volume", 0)
-                    liquidity = market.get("liquidity", 0)
-                    
-                    with st.expander(f"📊 {title[:70]}...", expanded=False):
-                        c1, c2 = st.columns(2)
-                        with c1:
-                            vol_display = f"${volume:,.0f}" if volume else "N/A"
-                            st.markdown(f"**VOLUME:** {vol_display}")
-                        with c2:
-                            liq_display = f"${liquidity:,.0f}" if liquidity else "N/A"
-                            st.markdown(f"**LIQUIDITY:** {liq_display}")
-                        
-                        if st.button(f"📌 ADD TO WATCHLIST", key=f"watch_{market.get('id', title[:20])}"):
-                            st.session_state.polymarket_watchlist.append({
-                                "title": title,
-                                "id": market.get("id"),
-                                "added_at": datetime.now().isoformat()
-                            })
-                            st.success("[ ADDED TO WATCHLIST ]")
-            else:
-                st.markdown("""
-                <div style="text-align: center; padding: 2rem; border: 1px dashed #ffaa00;">
-                    <span style="color: #ffaa00;">⚠ UNABLE TO FETCH MARKET DATA</span><br>
-                    <span style="color: #4a5568; font-size: 0.8rem;">API may be rate-limited</span>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown("**[ WATCHLIST ]**")
-            
-            if st.session_state.polymarket_watchlist:
-                for i, item in enumerate(st.session_state.polymarket_watchlist):
-                    st.markdown(f"""
-                    <div style="background: #0d1117; border: 1px solid #00ff4133; padding: 0.5rem; margin-bottom: 0.5rem; font-size: 0.8rem;">
-                        {item['title'][:40]}...
-                    </div>
-                    """, unsafe_allow_html=True)
-                    if st.button("🗑️ REMOVE", key=f"del_watch_{i}"):
-                        st.session_state.polymarket_watchlist.pop(i)
-                        st.rerun()
-            else:
-                st.markdown("_No markets tracked_")
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-    
-    # =========================================================================
-    # TAB 5: BACKTESTING STRATEGIES
-    # =========================================================================
-    with tab5:
-        st.markdown("""
-        <div class="mission-panel">
-            <div style="font-size: 0.8rem; letter-spacing: 0.2em; margin-bottom: 1rem; border-bottom: 1px solid #00ff4133; padding-bottom: 0.5rem;">
-                🧪 STRATEGY BACKTESTING LABORATORY
-            </div>
-        """, unsafe_allow_html=True)
-        
-        backtest_data = load_backtest_results()
-        
-        if backtest_data.get("error"):
-            st.error(f"[ ERROR: {backtest_data['error']} ]")
-        else:
-            # Test metadata
-            st.markdown(f"""
-            <div style="display: flex; justify-content: space-between; background: #0a0a0a; padding: 0.75rem; border: 1px solid #00ff4133; margin-bottom: 1rem; font-size: 0.8rem;">
-                <span>TEST PERIOD: {backtest_data.get('test_period', 'N/A')}</span>
-                <span>ASSETS: {', '.join(backtest_data.get('assets', []))}</span>
-                <span>ACCOUNT: {backtest_data.get('account_size', 'N/A')}</span>
-                <span>SOURCE: {backtest_data.get('data_source', 'N/A')}</span>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Strategy grid
-            for strategy in backtest_data.get("strategies", []):
-                status = strategy.get("status", "TESTING")
-                status_class = status.lower()
-                card_class = status.lower()
-                
-                sharpe = strategy.get("sharpe", 0)
-                sharpe_color = "#00ff41" if sharpe > 1 else ("#ffaa00" if sharpe > 0 else "#ff0000")
-                
-                avg_return = strategy.get("avg_return", "0%")
-                return_color = "#00ff41" if avg_return.startswith("+") else "#ff0000"
-                
-                st.markdown(f"""
-                <div class="strategy-card {card_class}">
-                    <div class="strategy-header">
-                        <div>
-                            {render_led(status)}
-                            <span class="strategy-name">{strategy.get('id')}: {strategy.get('name')}</span>
-                        </div>
-                        <span class="strategy-status status-{status_class}">{status}</span>
-                    </div>
-                    <div style="color: #4a5568; font-size: 0.85rem; margin-bottom: 1rem;">
-                        {strategy.get('summary', '')}
-                    </div>
-                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1rem;">
-                        <div style="text-align: center;">
-                            <div style="font-size: 0.7rem; color: #4a5568; text-transform: uppercase;">AVG RETURN</div>
-                            <div style="font-size: 1.1rem; color: {return_color}; font-weight: 700;">{avg_return}</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 0.7rem; color: #4a5568; text-transform: uppercase;">SHARPE</div>
-                            <div style="font-size: 1.1rem; color: {sharpe_color}; font-weight: 700;">{sharpe:.2f}</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 0.7rem; color: #4a5568; text-transform: uppercase;">MAX DD</div>
-                            <div style="font-size: 1.1rem; color: #ffaa00; font-weight: 700;">{strategy.get('max_drawdown', 'N/A')}</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 0.7rem; color: #4a5568; text-transform: uppercase;">WIN RATE</div>
-                            <div style="font-size: 1.1rem; font-weight: 700;">{strategy.get('win_rate', 'N/A')}</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 0.7rem; color: #4a5568; text-transform: uppercase;">TRADES</div>
-                            <div style="font-size: 1.1rem; font-weight: 700;">{strategy.get('trades', 0)}</div>
-                        </div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Expandable details
-                with st.expander(f"📋 {strategy.get('id')} DETAILS", expanded=False):
-                    col1, col2 = st.columns(2)
-                    
-                    with col1:
-                        st.markdown("**[ PARAMETERS ]**")
-                        params = strategy.get("parameters", {})
-                        for key, value in params.items():
-                            st.markdown(f"• `{key}`: {value}")
-                    
-                    with col2:
-                        st.markdown("**[ TRADING RULES ]**")
-                        rules = strategy.get("rules", [])
-                        for rule in rules:
-                            st.markdown(f"• {rule}")
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-    
-    # =========================================================================
-    # TAB 6: ANALYTICS
-    # =========================================================================
-    with tab6:
-        st.markdown("""
-        <div class="mission-panel">
-            <div style="font-size: 0.8rem; letter-spacing: 0.2em; margin-bottom: 1rem; border-bottom: 1px solid #00ff4133; padding-bottom: 0.5rem;">
-                📈 PERFORMANCE TELEMETRY
-            </div>
-        """, unsafe_allow_html=True)
-        
-        closed_trades = [t for t in st.session_state.trades if t.get("status") == "Closed"]
-        
-        if closed_trades:
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                # Cumulative P&L chart
-                sorted_closed = sorted(closed_trades, key=lambda x: x.get("closed_at", ""))
-                cumulative = []
-                running_pnl = 0
-                for trade in sorted_closed:
-                    running_pnl += trade.get("pnl", 0)
-                    cumulative.append({
-                        "date": trade.get("closed_at", "")[:10],
-                        "pnl": running_pnl,
-                        "trade": f"#{trade['id']} {trade['asset']}"
-                    })
-                
-                cum_df = pd.DataFrame(cumulative)
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(
-                    x=list(range(len(cum_df))),
-                    y=cum_df["pnl"],
-                    mode='lines+markers',
-                    fill='tozeroy',
-                    fillcolor='rgba(0,255,65,0.1)',
-                    line=dict(color='#00ff41', width=2),
-                    marker=dict(color='#00ff41', size=6),
-                    hovertemplate='Trade: %{text}<br>P&L: $%{y:.2f}<extra></extra>',
-                    text=cum_df["trade"]
-                ))
-                fig.update_layout(
-                    title=dict(text="CUMULATIVE P&L", font=dict(family='IBM Plex Mono', color='#00ff41')),
-                    xaxis_title="TRADE #",
-                    yaxis_title="P&L ($)",
-                    height=350,
-                    paper_bgcolor='#0d1117',
-                    plot_bgcolor='#0a0a0a',
-                    font=dict(family='IBM Plex Mono', color='#00ff41'),
-                    xaxis=dict(gridcolor='#1a1a2e', zerolinecolor='#00ff41'),
-                    yaxis=dict(gridcolor='#1a1a2e', zerolinecolor='#00ff41')
-                )
-                st.plotly_chart(fig, use_container_width=True)
-            
-            with col2:
-                # P&L distribution
-                pnls = [t.get("pnl", 0) for t in closed_trades]
-                colors = ['#00ff41' if p >= 0 else '#ff0000' for p in pnls]
-                
-                fig = go.Figure()
-                fig.add_trace(go.Histogram(
-                    x=pnls,
-                    nbinsx=15,
-                    marker_color='#00ff41',
-                    marker_line_color='#00cc33',
-                    marker_line_width=1
-                ))
-                fig.update_layout(
-                    title=dict(text="P&L DISTRIBUTION", font=dict(family='IBM Plex Mono', color='#00ff41')),
-                    xaxis_title="P&L ($)",
-                    yaxis_title="FREQUENCY",
-                    height=350,
-                    paper_bgcolor='#0d1117',
-                    plot_bgcolor='#0a0a0a',
-                    font=dict(family='IBM Plex Mono', color='#00ff41'),
-                    xaxis=dict(gridcolor='#1a1a2e'),
-                    yaxis=dict(gridcolor='#1a1a2e')
-                )
-                st.plotly_chart(fig, use_container_width=True)
-            
-            # Performance by prong
-            st.markdown("**[ PERFORMANCE BY STRATEGY ]**")
-            
-            prong_data = []
-            for prong in st.session_state.allocations.keys():
-                prong_trades = [t for t in closed_trades if t.get("prong") == prong]
-                if prong_trades:
-                    wins = len([t for t in prong_trades if t.get("pnl", 0) > 0])
-                    total = len(prong_trades)
-                    pnl = sum(t.get("pnl", 0) for t in prong_trades)
-                    prong_data.append({
-                        "STRATEGY": prong.upper(),
-                        "TRADES": total,
-                        "WIN RATE": f"{wins/total*100:.1f}%" if total > 0 else "N/A",
-                        "TOTAL P&L": f"${pnl:+.2f}",
-                        "AVG TRADE": f"${pnl/total:+.2f}" if total > 0 else "N/A"
-                    })
-            
-            if prong_data:
-                st.dataframe(pd.DataFrame(prong_data), use_container_width=True, hide_index=True)
-            
-            # Full trade log
-            st.markdown("**[ COMPLETE MISSION LOG ]**")
-            trades_df = pd.DataFrame(closed_trades)
-            display_cols = ["id", "prong", "asset", "direction", "position_size", "entry_price", "exit_price", "pnl", "pnl_pct"]
-            available_cols = [c for c in display_cols if c in trades_df.columns]
-            st.dataframe(
-                trades_df[available_cols].sort_values("id", ascending=False),
-                use_container_width=True,
-                hide_index=True
-            )
-        else:
-            st.markdown("""
-            <div style="text-align: center; padding: 3rem; color: #4a5568;">
-                [ INSUFFICIENT DATA FOR ANALYSIS ]<br>
-                <span style="font-size: 0.8rem;">Complete trade operations to generate telemetry</span>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-    
-    # =========================================================================
-    # TAB 7: SYSTEMS (SETTINGS)
-    # =========================================================================
-    with tab7:
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("""
-            <div class="mission-panel">
-                <div style="font-size: 0.8rem; letter-spacing: 0.2em; margin-bottom: 1rem; border-bottom: 1px solid #00ff4133; padding-bottom: 0.5rem;">
-                    ⚙️ SYSTEM CONFIGURATION
-                </div>
-            """, unsafe_allow_html=True)
-            
-            with st.form("settings_form"):
-                initial_capital = st.number_input(
-                    "INITIAL CAPITAL ($)", 
-                    value=st.session_state.settings.get("initial_capital", 1000),
-                    step=100
-                )
-                
-                risk_per_trade = st.slider(
-                    "RISK PER TRADE (%)",
-                    min_value=0.5,
-                    max_value=10.0,
-                    value=st.session_state.settings.get("risk_per_trade", 2.0),
-                    step=0.5
-                )
-                
-                st.markdown("**[ ALLOCATION MATRIX ]**")
-                new_allocations = {}
-                for prong, data in st.session_state.allocations.items():
-                    new_alloc = st.number_input(
-                        f"{prong.upper()}",
-                        value=data["allocated"],
-                        step=50,
-                        key=f"alloc_{prong}"
-                    )
-                    new_allocations[prong] = new_alloc
-                
-                if st.form_submit_button("💾 SAVE CONFIGURATION", use_container_width=True):
-                    st.session_state.settings["initial_capital"] = initial_capital
-                    st.session_state.settings["risk_per_trade"] = risk_per_trade
-                    
-                    for prong, new_alloc in new_allocations.items():
-                        old_alloc = st.session_state.allocations[prong]["allocated"]
-                        diff = new_alloc - old_alloc
-                        st.session_state.allocations[prong]["allocated"] = new_alloc
-                        st.session_state.allocations[prong]["current"] += diff
-                    
-                    st.success("[ CONFIGURATION SAVED ]")
-                    st.rerun()
-            
-            st.markdown("</div>", unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown("""
-            <div class="mission-panel">
-                <div style="font-size: 0.8rem; letter-spacing: 0.2em; margin-bottom: 1rem; border-bottom: 1px solid #00ff4133; padding-bottom: 0.5rem;">
-                    💾 DATA MANAGEMENT
-                </div>
-            """, unsafe_allow_html=True)
-            
-            st.markdown("**[ EXPORT DATA ]**")
-            export_json = export_data()
-            st.download_button(
-                "📥 DOWNLOAD BACKUP",
-                data=export_json,
-                file_name=f"mission_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                mime="application/json",
-                use_container_width=True
-            )
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            st.markdown("**[ IMPORT DATA ]**")
-            uploaded_file = st.file_uploader("UPLOAD BACKUP FILE", type="json")
-            if uploaded_file:
-                if st.button("📤 IMPORT DATA", use_container_width=True):
-                    content = uploaded_file.read().decode("utf-8")
-                    if import_data(content):
-                        st.success("[ DATA IMPORTED SUCCESSFULLY ]")
-                        st.rerun()
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            st.markdown("**[ ⚠️ DANGER ZONE ]**")
-            if st.button("🗑️ RESET ALL DATA", use_container_width=True):
-                st.warning("[ WARNING: THIS WILL DELETE ALL MISSION DATA ]")
-            
-            st.markdown("</div>", unsafe_allow_html=True)
-    
-    # =========================================================================
-    # SIDEBAR - COMMAND MODULE
-    # =========================================================================
+with tab1:
+    # Sidebar - Mission Control Panel
     with st.sidebar:
+        st.markdown("### ⚡ MISSION CONTROL PANEL")
+
+        # New Trade Entry
+        st.markdown("#### 📝 NEW TRADE ENTRY")
+        with st.form("new_trade_form"):
+            prong = st.selectbox(
+                "MISSION PRONG",
+                ["News Trading", "Polymarket", "Algorithmic"]
+            )
+            
+            asset = st.text_input("ASSET/MARKET", placeholder="e.g., BTC, ETH, 'Trump 2024'")
+            
+            direction = st.selectbox("DIRECTION", ["Long", "Short"])
+            
+            entry_price = st.number_input("ENTRY PRICE ($)", min_value=0.0, step=0.01)
+            
+            position_size = st.number_input(
+                "POSITION SIZE ($)", 
+                min_value=0.0, 
+                max_value=st.session_state.allocations[prong]["available"],
+                step=10.0
+            )
+            
+            target = st.number_input("TARGET ($)", min_value=0.0, step=0.01)
+            stop_loss = st.number_input("STOP LOSS ($)", min_value=0.0, step=0.01)
+            
+            notes = st.text_area("MISSION NOTES", placeholder="Strategy, catalyst, etc.")
+            
+            submitted = st.form_submit_button("🚀 EXECUTE TRADE")
+            
+            if submitted:
+                trade = {
+                    "id": len(st.session_state.trades) + 1,
+                    "timestamp": datetime.now().isoformat(),
+                    "prong": prong,
+                    "asset": asset,
+                    "direction": direction,
+                    "entry_price": entry_price,
+                    "position_size": position_size,
+                    "target": target,
+                    "stop_loss": stop_loss,
+                    "notes": notes,
+                    "status": "Open",
+                    "pnl": 0,
+                    "pnl_pct": 0
+                }
+                st.session_state.trades.append(trade)
+                st.session_state.allocations[prong]["used"] += position_size
+                st.session_state.allocations[prong]["available"] -= position_size
+                st.markdown(f'<div class="alert-success">TRADE EXECUTED! {prong}: ${position_size:.2f}</div>', unsafe_allow_html=True)
+
+        # Close Position Form
+        st.markdown("#### 🔒 CLOSE POSITION")
+        with st.form("close_trade_form"):
+            if st.session_state.trades:
+                open_trades = [t for t in st.session_state.trades if t["status"] == "Open"]
+                if open_trades:
+                    trade_options = {f"#{t['id']} - {t['asset']} ({t['prong']})": t for t in open_trades}
+                    selected_trade_key = st.selectbox("SELECT POSITION", list(trade_options.keys()))
+                    selected_trade = trade_options[selected_trade_key]
+                    
+                    exit_price = st.number_input("EXIT PRICE ($)", min_value=0.0, step=0.01)
+                    
+                    close_submitted = st.form_submit_button("🔒 CLOSE POSITION")
+                    
+                    if close_submitted:
+                        # Calculate P&L
+                        trade_idx = st.session_state.trades.index(selected_trade)
+                        entry = selected_trade["entry_price"]
+                        direction = 1 if selected_trade["direction"] == "Long" else -1
+                        
+                        pnl_pct = ((exit_price - entry) / entry) * direction * 100
+                        pnl_amount = selected_trade["position_size"] * (pnl_pct / 100)
+                        
+                        st.session_state.trades[trade_idx]["status"] = "Closed"
+                        st.session_state.trades[trade_idx]["exit_price"] = exit_price
+                        st.session_state.trades[trade_idx]["pnl"] = pnl_amount
+                        st.session_state.trades[trade_idx]["pnl_pct"] = pnl_pct
+                        st.session_state.trades[trade_idx]["close_timestamp"] = datetime.now().isoformat()
+                        
+                        # Return allocation
+                        prong = selected_trade["prong"]
+                        st.session_state.allocations[prong]["used"] -= selected_trade["position_size"]
+                        st.session_state.allocations[prong]["available"] += selected_trade["position_size"]
+                        
+                        alert_class = "alert-success" if pnl_amount >= 0 else "alert-danger"
+                        st.markdown(f'<div class="{alert_class}">POSITION CLOSED! P&L: ${pnl_amount:+.2f} ({pnl_pct:+.2f}%)</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown('<div class="alert-warning">NO OPEN POSITIONS</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="alert-warning">NO TRADES YET</div>', unsafe_allow_html=True)
+
+        # Export data
+        st.markdown("#### 💾 DATA EXPORT")
+        if st.button("📥 EXPORT MISSION DATA"):
+            data = {
+                "trades": st.session_state.trades,
+                "allocations": st.session_state.allocations,
+                "export_time": datetime.now().isoformat()
+            }
+            st.download_button(
+                label="DOWNLOAD TRADES.JSON",
+                data=json.dumps(data, indent=2),
+                file_name=f"mission_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                mime="application/json"
+            )
+
+    # Main Dashboard
+    # Row 1: Mission Status Indicators
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        total_allocated = sum(a["allocated"] for a in st.session_state.allocations.values())
+        total_used = sum(a["used"] for a in st.session_state.allocations.values())
+        st.metric(
+            "💰 MISSION CAPITAL",
+            f"${total_allocated:,.0f}",
+            f"DEPLOYED: ${total_used:,.0f}"
+        )
+
+    with col2:
+        closed_trades = [t for t in st.session_state.trades if t["status"] == "Closed"]
+        total_pnl = sum(t["pnl"] for t in closed_trades) if closed_trades else 0
+        pnl_color = "🟢" if total_pnl >= 0 else "🔴"
+        delta_color = "normal" if total_pnl >= 0 else "inverse"
+        st.metric(
+            "📈 MISSION P&L",
+            f"${total_pnl:+.2f}",
+            f"{pnl_color} STATUS",
+            delta_color=delta_color
+        )
+
+    with col3:
+        open_count = len([t for t in st.session_state.trades if t["status"] == "Open"])
+        st.metric(
+            "🔓 ACTIVE POSITIONS",
+            f"{open_count}",
+            "MONITORING"
+        )
+
+    with col4:
+        if closed_trades:
+            win_rate = (len([t for t in closed_trades if t["pnl"] > 0]) / len(closed_trades)) * 100
+        else:
+            win_rate = 0
+        status = "🎯 OPTIMAL" if win_rate >= 50 else "⚠️ REVIEW" if win_rate >= 30 else "🚨 CRITICAL"
+        st.metric(
+            "🎯 WIN RATE",
+            f"{win_rate:.1f}%",
+            f"{status} • {len(closed_trades)} TRADES"
+        )
+
+    st.divider()
+
+    # Row 2: Capital Allocation and Trade Log
+    col1, col2 = st.columns([1, 2])
+
+    with col1:
+        st.subheader("📊 CAPITAL ALLOCATION MATRIX")
+        
+        alloc_data = []
+        for prong, data in st.session_state.allocations.items():
+            alloc_data.append({
+                "PRONG": prong,
+                "ALLOCATED": data["allocated"],
+                "DEPLOYED": data["used"],
+                "AVAILABLE": data["available"],
+                "UTILIZATION %": (data["used"] / data["allocated"]) * 100 if data["allocated"] > 0 else 0
+            })
+        
+        alloc_df = pd.DataFrame(alloc_data)
+        st.dataframe(
+            alloc_df,
+            column_config={
+                "ALLOCATED": st.column_config.NumberColumn("ALLOCATED", format="$%.0f"),
+                "DEPLOYED": st.column_config.NumberColumn("DEPLOYED", format="$%.0f"),
+                "AVAILABLE": st.column_config.NumberColumn("AVAILABLE", format="$%.0f"),
+                "UTILIZATION %": st.column_config.NumberColumn("UTILIZATION", format="%.1f%%")
+            },
+            use_container_width=True,
+            hide_index=True
+        )
+        
+        # Allocation pie chart with NASA colors
+        fig = go.Figure(data=[go.Pie(
+            labels=list(st.session_state.allocations.keys()),
+            values=[a["used"] for a in st.session_state.allocations.values()],
+            hole=.4,
+            textinfo='label+percent',
+            textposition='outside',
+            marker=dict(
+                colors=['#39ff14', '#ff6600', '#00ffff'],
+                line=dict(color='#0a0a0a', width=2)
+            )
+        )])
+        fig.update_layout(
+            title="CAPITAL DEPLOYMENT BY PRONG",
+            showlegend=False,
+            height=300,
+            font=dict(family="IBM Plex Mono, monospace", color="#39ff14"),
+            paper_bgcolor='#0a0a0a',
+            plot_bgcolor='#0a0a0a'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col2:
+        st.subheader("📋 MISSION TRADE LOG")
+        
+        if st.session_state.trades:
+            trades_df = pd.DataFrame(st.session_state.trades)
+            trades_df["TIMESTAMP"] = pd.to_datetime(trades_df["timestamp"]).dt.strftime("%m/%d %H:%M")
+            
+            display_cols = ["id", "TIMESTAMP", "prong", "asset", "direction", "position_size", "status", "pnl"]
+            if "close_timestamp" in trades_df.columns:
+                trades_df["CLOSE_TIME"] = pd.to_datetime(trades_df["close_timestamp"]).dt.strftime("%m/%d %H:%M")
+                display_cols.append("CLOSE_TIME")
+            
+            # Rename columns for display
+            display_df = trades_df[display_cols].copy()
+            display_df.columns = ["ID", "TIME", "PRONG", "ASSET", "DIR", "SIZE", "STATUS", "P&L", "CLOSE"] if len(display_cols) == 9 else ["ID", "TIME", "PRONG", "ASSET", "DIR", "SIZE", "STATUS", "P&L"]
+            
+            st.dataframe(
+                display_df,
+                use_container_width=True,
+                hide_index=True,
+                height=400
+            )
+        else:
+            st.markdown('<div class="alert-warning">NO MISSION DATA YET. INITIALIZE FIRST TRADE VIA CONTROL PANEL.</div>', unsafe_allow_html=True)
+
+    st.divider()
+
+    # Row 3: Performance Analysis
+    if closed_trades:
+        st.subheader("📉 MISSION PERFORMANCE ANALYSIS")
+        
+        perf_data = []
+        cumulative_pnl = 0
+        for trade in sorted(closed_trades, key=lambda x: x["close_timestamp"]):
+            cumulative_pnl += trade["pnl"]
+            perf_data.append({
+                "date": pd.to_datetime(trade["close_timestamp"]),
+                "cumulative_pnl": cumulative_pnl,
+                "trade_pnl": trade["pnl"]
+            })
+        
+        perf_df = pd.DataFrame(perf_data)
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=perf_df["date"],
+            y=perf_df["cumulative_pnl"],
+            mode='lines+markers',
+            name='CUMULATIVE P&L',
+            line=dict(color='#39ff14', width=3),
+            fill='tozeroy',
+            fillcolor='rgba(57, 255, 20, 0.1)'
+        ))
+        
+        fig.update_layout(
+            title="MISSION PERFORMANCE TRAJECTORY",
+            xaxis_title="MISSION TIME",
+            yaxis_title="CUMULATIVE P&L ($)",
+            height=400,
+            hovermode='x unified',
+            font=dict(family="IBM Plex Mono, monospace", color="#39ff14"),
+            paper_bgcolor='#0a0a0a',
+            plot_bgcolor='#0d0d0d',
+            xaxis=dict(gridcolor='#1a1a1a'),
+            yaxis=dict(gridcolor='#1a1a1a')
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+
+with tab2:
+    st.subheader("📊 BACKTESTING STRATEGIES • NASA ANALYSIS CENTER")
+    
+    # Backtest Results Summary
+    st.markdown("""
+    <div class="terminal-bg">
+    <h4 style="color: #ff6600; margin-bottom: 20px;">🚀 MISSION: ALTERNATIVE DATA STRATEGY TESTING</h4>
+    <p><strong>TEST PERIOD:</strong> Last 30 days of 5-minute data</p>
+    <p><strong>ASSETS:</strong> BTC, ETH, SOL</p>
+    <p><strong>ACCOUNT SIZE:</strong> $350</p>
+    <p><strong>STRATEGIES TESTED:</strong> 7</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("### 🏆 STRATEGY PERFORMANCE MATRIX")
+    
+    # Strategy Results Table
+    strategy_data = [
+        {"RANK": "🥇 1", "STRATEGY": "RSI + Volume Confirmation", "AVG_RETURN": "+5.15%", "SHARPE": 14.64, "MAX_DD": "1.62%", "WIN_RATE": "40.1%", "TRADES": 32, "STATUS": "🟢 OPTIMAL"},
+        {"RANK": "🥈 2", "STRATEGY": "Multi-Factor Composite", "AVG_RETURN": "+2.15%", "SHARPE": 5.66, "MAX_DD": "1.26%", "WIN_RATE": "33.3%", "TRADES": 4, "STATUS": "🟢 VIABLE"},
+        {"RANK": "🥉 3", "STRATEGY": "RSI Mean Reversion", "AVG_RETURN": "+2.12%", "SHARPE": 6.91, "MAX_DD": "1.76%", "WIN_RATE": "31.6%", "TRADES": 68, "STATUS": "🟡 REVIEW"},
+        {"RANK": "4", "STRATEGY": "Bollinger Band Squeeze", "AVG_RETURN": "-0.15%", "SHARPE": -5.06, "MAX_DD": "0.21%", "WIN_RATE": "7.5%", "TRADES": 22, "STATUS": "🔴 AVOID"},
+        {"RANK": "5", "STRATEGY": "ATR Volatility Breakout", "AVG_RETURN": "-0.50%", "SHARPE": -2.59, "MAX_DD": "1.48%", "WIN_RATE": "20.1%", "TRADES": 50, "STATUS": "🔴 AVOID"},
+        {"RANK": "6", "STRATEGY": "EMA Crossover + Trend", "AVG_RETURN": "-5.69%", "SHARPE": -11.54, "MAX_DD": "7.50%", "WIN_RATE": "10.2%", "TRADES": 214, "STATUS": "🚨 CRITICAL"},
+        {"RANK": "7", "STRATEGY": "MACD Momentum", "AVG_RETURN": "-7.21%", "SHARPE": -15.85, "MAX_DD": "9.49%", "WIN_RATE": "10.2%", "TRADES": 310, "STATUS": "🚨 ABORT"},
+    ]
+    
+    strategy_df = pd.DataFrame(strategy_data)
+    st.dataframe(
+        strategy_df,
+        use_container_width=True,
+        hide_index=True,
+        height=350
+    )
+    
+    # Winning Strategies Details
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 🏆 TOP PERFORMER: RSI + VOLUME CONFIRMATION")
         st.markdown("""
-        <div style="text-align: center; padding: 0.5rem; border: 1px solid #00ff41; margin-bottom: 1rem;">
-            <div style="font-size: 0.7rem; color: #4a5568; letter-spacing: 0.2em;">COMMAND MODULE</div>
+        <div class="terminal-bg">
+        <h4 style="color: #39ff14;">STRATEGY PARAMETERS:</h4>
+        <p><strong>BUY:</strong> RSI < 30 AND Volume > 1.5x 20-period avg</p>
+        <p><strong>SELL:</strong> RSI > 70 AND Volume > 1.5x 20-period avg</p>
+        
+        <h4 style="color: #ff6600; margin-top: 20px;">ASSET PERFORMANCE:</h4>
+        <p><strong>BTC:</strong> +1.98% (-2.01% vs Buy&Hold)</p>
+        <p><strong>ETH:</strong> +6.52% (+0.69% vs Buy&Hold) ⭐</p>
+        <p><strong>SOL:</strong> +6.94% (-0.64% vs Buy&Hold) ⭐</p>
+        
+        <h4 style="color: #ff6600; margin-top: 20px;">MISSION CRITICAL:</h4>
+        <p>• Best overall performance: 14.64 Sharpe ratio</p>
+        <p>• Volume filter prevents false RSI signals</p>
+        <p>• ~10 trades/month = optimal for $350 account</p>
+        <p>• ETH and SOL show exceptional results</p>
         </div>
         """, unsafe_allow_html=True)
-        
-        # Quick stats
-        st.markdown("**[ MISSION STATUS ]**")
-        
-        capital_delta = metrics['total_pnl_pct']
-        st.metric("CAPITAL", f"${metrics['current_capital']:,.0f}", f"{capital_delta:+.1f}%")
-        st.metric("EXPOSURE", f"${metrics['open_exposure']:.0f}", f"{metrics['open_positions']} ACTIVE")
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        st.markdown("**[ STRATEGY P&L ]**")
-        for prong, pnl in metrics["prong_pnl"].items():
-            indicator = "▲" if pnl >= 0 else "▼"
-            color = "#00ff41" if pnl >= 0 else "#ff0000"
-            st.markdown(f'<span style="color: {color};">{indicator}</span> {prong}: ${pnl:+.2f}', unsafe_allow_html=True)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        st.markdown("**[ QUICK LINKS ]**")
-        st.markdown("[📊 Polymarket](https://polymarket.com)")
-        st.markdown("[📈 TradingView](https://tradingview.com)")
-        st.markdown("[🪙 CoinGecko](https://coingecko.com)")
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        if st.button("🔄 REFRESH SYSTEMS", use_container_width=True):
-            st.cache_data.clear()
-            st.rerun()
-        
+    
+    with col2:
+        st.markdown("### 🥈 RUNNER-UP: MULTI-FACTOR COMPOSITE")
         st.markdown("""
-        <div style="text-align: center; padding: 1rem; margin-top: 2rem; border-top: 1px solid #00ff4133;">
-            <div style="font-size: 0.6rem; color: #4a5568; letter-spacing: 0.15em;">
-                MISSION CONTROL v2.0<br>
-                $1K CRYPTO MISSION<br>
-                <span style="color: #00ff41;">● SYSTEMS NOMINAL</span>
-            </div>
+        <div class="terminal-bg">
+        <h4 style="color: #39ff14;">STRATEGY PARAMETERS:</h4>
+        <p><strong>SYSTEM:</strong> Score-based (RSI + Volume + Trend)</p>
+        <p><strong>BUY:</strong> Score >= 2</p>
+        <p><strong>SELL:</strong> Score <= -2</p>
+        
+        <h4 style="color: #ff6600; margin-top: 20px;">ASSET PERFORMANCE:</h4>
+        <p><strong>BTC:</strong> +2.13% (50% win rate) ⭐</p>
+        <p><strong>ETH:</strong> +4.33% (50% win rate) ⭐</p>
+        <p><strong>SOL:</strong> 0.00% (No signals generated)</p>
+        
+        <h4 style="color: #ff6600; margin-top: 20px;">MISSION CRITICAL:</h4>
+        <p>• Highest win rate: 50% on BTC & ETH</p>
+        <p>• Ultra-selective: Only 4 trades total</p>
+        <p>• Lowest drawdown: 1.26% max</p>
+        <p>• Perfect for small accounts (minimal fees)</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Asset-Specific Recommendations
+    st.markdown("### 🎯 ASSET-SPECIFIC MISSION PROTOCOLS")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class="metric-card">
+        <h4 style="color: #ff6600;">🟠 BTC PROTOCOL</h4>
+        <p><strong>PRIMARY:</strong> Multi-Factor Composite</p>
+        <p><strong>RETURN:</strong> +2.13%</p>
+        <p><strong>WIN RATE:</strong> 50%</p>
+        <p><strong>CHARACTERISTICS:</strong> Mean-reverting, needs confirmation</p>
+        <p><strong>OPTIMAL:</strong> Fewer, high-conviction trades</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="metric-card">
+        <h4 style="color: #ff6600;">🔵 ETH PROTOCOL</h4>
+        <p><strong>PRIMARY:</strong> RSI + Volume</p>
+        <p><strong>RETURN:</strong> +6.52%</p>
+        <p><strong>WIN RATE:</strong> 42.9%</p>
+        <p><strong>CHARACTERISTICS:</strong> Excellent mean reversion response</p>
+        <p><strong>OPTIMAL:</strong> RSI 30/70 levels work perfectly</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div class="metric-card">
+        <h4 style="color: #ff6600;">🟣 SOL PROTOCOL</h4>
+        <p><strong>PRIMARY:</strong> RSI + Volume</p>
+        <p><strong>RETURN:</strong> +6.94%</p>
+        <p><strong>WIN RATE:</strong> 37.5%</p>
+        <p><strong>CHARACTERISTICS:</strong> High volatility, volume critical</p>
+        <p><strong>OPTIMAL:</strong> Volume spikes = real moves</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Implementation Guide
+    st.markdown("### 🚀 IMPLEMENTATION PROTOCOL FOR $350 MISSION")
+    
+    st.markdown("""
+    <div class="terminal-bg">
+    <h4 style="color: #39ff14;">RECOMMENDED MISSION SETUP:</h4>
+    
+    <pre style="color: #39ff14; background: #0d0d0d; padding: 15px; border-radius: 5px;">
+# PRIMARY STRATEGY: RSI + Volume Confirmation
+def mission_signal(df):
+    rsi = calculate_rsi(df['close'], 14)
+    volume_sma = df['volume'].rolling(20).mean()
+    
+    if rsi.iloc[-1] < 30 and df['volume'].iloc[-1] > volume_sma.iloc[-1] * 1.5:
+        return 'BUY'  # 🟢 EXECUTE LONG
+    elif rsi.iloc[-1] > 70 and df['volume'].iloc[-1] > volume_sma.iloc[-1] * 1.5:
+        return 'SELL'  # 🔴 EXECUTE SHORT
+    return 'HOLD'  # ⚪ MAINTAIN POSITION
+
+# RISK MANAGEMENT PROTOCOL
+max_risk_per_trade = 0.03  # 3% of account per trade
+position_size = account_balance * max_risk_per_trade / (atr * price)
+    </pre>
+    
+    <h4 style="color: #ff6600; margin-top: 20px;">MISSION TRADING RULES:</h4>
+    <p><strong>TRADE FREQUENCY:</strong> Max 1-2 trades per week per asset</p>
+    <p><strong>POSITION SIZE:</strong> Risk 2-3% per trade ($7-10 on $350 account)</p>
+    <p><strong>STOP LOSS:</strong> 1.5x ATR from entry</p>
+    <p><strong>TAKE PROFIT:</strong> 3x risk (1:3 risk/reward ratio)</p>
+    <p><strong>MAX POSITIONS:</strong> 2 concurrent trades maximum</p>
+    
+    <h4 style="color: #ff6600; margin-top: 20px;">MISSION CRITICAL METRICS:</h4>
+    <p><strong>TARGET WIN RATE:</strong> > 50%</p>
+    <p><strong>TARGET SHARPE:</strong> > 1.0</p>
+    <p><strong>MAX DRAWDOWN:</strong> < 5%</p>
+    <p><strong>MONTHLY TRADES:</strong> 5-10</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # What Works vs What Doesn't
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### ✅ MISSION APPROVED PROTOCOLS")
+        st.markdown("""
+        <div class="alert-success">
+        <p><strong>MEAN REVERSION + VOLUME:</strong> Catches true market extremes</p>
+        <p><strong>MULTI-FACTOR CONFIRMATION:</strong> Reduces false signals</p>
+        <p><strong>LOW TRADE FREQUENCY:</strong> Minimizes fees, higher quality</p>
+        <p><strong>RSI EXTREMES (30/70):</strong> Market-tested reversal levels</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("### ❌ MISSION ABORT PROTOCOLS")
+        st.markdown("""
+        <div class="alert-danger">
+        <p><strong>PURE MOMENTUM (MACD, EMA):</strong> Whipsaws in current market</p>
+        <p><strong>HIGH TRADE FREQUENCY:</strong> Fees destroy $350 account</p>
+        <p><strong>BREAKOUT CHASING:</strong> False breakouts common on 5m</p>
+        <p><strong>SINGLE INDICATOR:</strong> Insufficient edge for mission success</p>
         </div>
         """, unsafe_allow_html=True)
 
-# =============================================================================
-# LAUNCH SEQUENCE
-# =============================================================================
-if __name__ == "__main__":
-    main()
+# Footer
+st.markdown('<div class="footer">🚀 BUILT FOR THE $1K CRYPTO TRADING MISSION | NASA MISSION CONTROL AESTHETIC | STREAMLIT DASHBOARD v2.0</div>', unsafe_allow_html=True)
