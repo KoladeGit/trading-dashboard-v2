@@ -403,16 +403,15 @@ with tab1:
         # Close Position Form
         st.markdown("#### 🔒 CLOSE POSITION")
         with st.form("close_trade_form"):
-            if st.session_state.trades:
-                open_trades = [t for t in st.session_state.trades if t["status"] == "Open"]
-                if open_trades:
-                    trade_options = {f"#{t['id']} - {t['asset']} ({t['prong']})": t for t in open_trades}
-                    selected_trade_key = st.selectbox("SELECT POSITION", list(trade_options.keys()))
-                    selected_trade = trade_options[selected_trade_key]
-                    
-                    exit_price = st.number_input("EXIT PRICE ($)", min_value=0.0, step=0.01)
-                    
-                    close_submitted = st.form_submit_button("🔒 CLOSE POSITION")
+            open_trades = [t for t in st.session_state.trades if t["status"] == "Open"] if st.session_state.trades else []
+            if open_trades:
+                trade_options = {f"#{t['id']} - {t['asset']} ({t['prong']})": t for t in open_trades}
+                selected_trade_key = st.selectbox("SELECT POSITION", list(trade_options.keys()))
+                selected_trade = trade_options[selected_trade_key]
+                
+                exit_price = st.number_input("EXIT PRICE ($)", min_value=0.0, step=0.01)
+                
+                close_submitted = st.form_submit_button("🔒 CLOSE POSITION")
                     
                     if close_submitted:
                         # Calculate P&L
@@ -436,10 +435,9 @@ with tab1:
                         
                         alert_class = "alert-success" if pnl_amount >= 0 else "alert-danger"
                         st.markdown(f'<div class="{alert_class}">POSITION CLOSED! P&L: ${pnl_amount:+.2f} ({pnl_pct:+.2f}%)</div>', unsafe_allow_html=True)
-                else:
-                    st.markdown('<div class="alert-warning">NO OPEN POSITIONS</div>', unsafe_allow_html=True)
             else:
-                st.markdown('<div class="alert-warning">NO TRADES YET</div>', unsafe_allow_html=True)
+                st.markdown('<div class="alert-warning">NO OPEN POSITIONS</div>', unsafe_allow_html=True)
+                st.form_submit_button("🔒 CLOSE POSITION", disabled=True)
 
         # Export data
         st.markdown("#### 💾 DATA EXPORT")
@@ -528,7 +526,7 @@ with tab1:
                 "AVAILABLE": st.column_config.NumberColumn("AVAILABLE", format="$%.0f"),
                 "UTILIZATION %": st.column_config.NumberColumn("UTILIZATION", format="%.1f%%")
             },
-            use_container_width=True,
+            width="100%",
             hide_index=True
         )
         
@@ -552,7 +550,7 @@ with tab1:
             paper_bgcolor='#0a0a0a',
             plot_bgcolor='#0a0a0a'
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="100%")
 
     with col2:
         st.subheader("📋 MISSION TRADE LOG")
@@ -572,7 +570,7 @@ with tab1:
             
             st.dataframe(
                 display_df,
-                use_container_width=True,
+                width="100%",
                 hide_index=True,
                 height=400
             )
@@ -621,7 +619,7 @@ with tab1:
             yaxis=dict(gridcolor='#1a1a1a')
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="100%")
 
 with tab2:
     st.subheader("📊 BACKTESTING STRATEGIES • NASA ANALYSIS CENTER")
@@ -653,7 +651,7 @@ with tab2:
     strategy_df = pd.DataFrame(strategy_data)
     st.dataframe(
         strategy_df,
-        use_container_width=True,
+        width="100%",
         hide_index=True,
         height=350
     )
