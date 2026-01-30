@@ -32,17 +32,20 @@ def load_real_balance():
 
 REAL_BALANCE = load_real_balance()
 
-# Initialize session state
+# Initialize session state - force reset to ensure correct structure
+def get_default_allocations():
+    return {
+        "News Trading": {"allocated": float(round(REAL_BALANCE * 0.4, 2)), "used": 0.0, "available": float(round(REAL_BALANCE * 0.4, 2))},
+        "Polymarket": {"allocated": float(round(REAL_BALANCE * 0.3, 2)), "used": 0.0, "available": float(round(REAL_BALANCE * 0.3, 2))},
+        "Algorithmic": {"allocated": float(round(REAL_BALANCE * 0.3, 2)), "used": 0.0, "available": float(round(REAL_BALANCE * 0.3, 2))}
+    }
+
 if 'trades' not in st.session_state:
     st.session_state.trades = []
 
-if 'allocations' not in st.session_state:
-    # Allocate based on real balance (40/30/30 split)
-    st.session_state.allocations = {
-        "News Trading": {"allocated": round(REAL_BALANCE * 0.4, 2), "used": 0, "available": round(REAL_BALANCE * 0.4, 2)},
-        "Polymarket": {"allocated": round(REAL_BALANCE * 0.3, 2), "used": 0, "available": round(REAL_BALANCE * 0.3, 2)},
-        "Algorithmic": {"allocated": round(REAL_BALANCE * 0.3, 2), "used": 0, "available": round(REAL_BALANCE * 0.3, 2)}
-    }
+# Always reset allocations to ensure correct structure (handles old session state)
+if 'allocations' not in st.session_state or 'available' not in st.session_state.allocations.get("News Trading", {}):
+    st.session_state.allocations = get_default_allocations()
 
 if 'positions' not in st.session_state:
     st.session_state.positions = []
@@ -368,7 +371,7 @@ with tab1:
             position_size = st.number_input(
                 "POSITION SIZE ($)", 
                 min_value=0.0, 
-                max_value=st.session_state.allocations[prong]["available"],
+                max_value=float(st.session_state.allocations[prong]["available"]),
                 step=10.0
             )
             
