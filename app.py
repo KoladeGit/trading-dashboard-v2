@@ -2,7 +2,7 @@
 """
 Trading Dashboard - $1K Crypto Mission
 NASA Mission Control Aesthetic
-Tracks allocations, P&L, and positions across 3 prongs
+Public dashboard - view only, no trade execution
 """
 
 import streamlit as st
@@ -18,71 +18,38 @@ st.set_page_config(
     page_title="MISSION CONTROL • Trading Dashboard",
     page_icon="🚀",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # Load real balance from bot_data.json
-def load_real_balance():
+def load_bot_data():
     try:
         with open('bot_data.json', 'r') as f:
-            data = json.load(f)
-            return data.get('account', {}).get('total_usd', 1000)
+            return json.load(f)
     except:
-        return 1000
+        return {
+            "account": {"total_usd": 349},
+            "trading_state": {"starting_balance": 376.26}
+        }
 
-REAL_BALANCE = load_real_balance()
+BOT_DATA = load_bot_data()
+TOTAL_BALANCE = BOT_DATA.get('account', {}).get('total_usd', 349)
+STARTING_BALANCE = BOT_DATA.get('trading_state', {}).get('starting_balance', 376.26)
+CURRENT_PNL = TOTAL_BALANCE - STARTING_BALANCE
 
-# Initialize session state - force reset to ensure correct structure
-def get_default_allocations():
-    return {
-        "News Trading": {"allocated": float(round(REAL_BALANCE * 0.4, 2)), "used": 0.0, "available": float(round(REAL_BALANCE * 0.4, 2))},
-        "Polymarket": {"allocated": float(round(REAL_BALANCE * 0.3, 2)), "used": 0.0, "available": float(round(REAL_BALANCE * 0.3, 2))},
-        "Algorithmic": {"allocated": float(round(REAL_BALANCE * 0.3, 2)), "used": 0.0, "available": float(round(REAL_BALANCE * 0.3, 2))}
-    }
+# Capital allocations
+POLYMARKET_ALLOCATION = round(TOTAL_BALANCE * 0.30, 2)  # 30%
+NEWS_TRADING_ALLOCATION = round(TOTAL_BALANCE * 0.40, 2)  # 40%
+ALGORITHMIC_ALLOCATION = round(TOTAL_BALANCE * 0.30, 2)  # 30%
 
-if 'trades' not in st.session_state:
-    st.session_state.trades = []
-
-# Always reset allocations to ensure correct structure (handles old session state)
-if 'allocations' not in st.session_state or 'available' not in st.session_state.allocations.get("News Trading", {}):
-    st.session_state.allocations = get_default_allocations()
-
-if 'positions' not in st.session_state:
-    st.session_state.positions = []
-
-# NASA Mission Control CSS with CRT scanlines and retro styling
+# NASA Mission Control CSS - no .stApp background override
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap');
     
-    /* Global dark theme - using Streamlit native theme instead */
     .stApp {
         font-family: 'IBM Plex Mono', monospace !important;
     }
-    
-    /* CRT scanlines effect - disabled for visibility */
-    /*
-    .stApp::after {
-        content: "";
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: repeating-linear-gradient(
-            0deg,
-            rgba(0, 0, 0, 0.15),
-            rgba(0, 0, 0, 0.15) 1px,
-            transparent 1px,
-            transparent 2px
-        );
-        pointer-events: none;
-        z-index: 1000;
-        animation: scanlines 0.1s linear infinite;
-    }
-    */
-    
-    /* Using Streamlit native dark theme */
     
     /* Headers and text */
     .main-header {
@@ -114,9 +81,7 @@ st.markdown("""
         border-radius: 8px;
         padding: 20px;
         margin: 10px 0;
-        box-shadow: 
-            0 0 15px rgba(57, 255, 20, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 15px rgba(57, 255, 20, 0.3);
         position: relative;
         overflow: hidden;
     }
@@ -137,77 +102,35 @@ st.markdown("""
         100% { left: 100%; }
     }
     
-    /* Status indicators */
-    .profit {
-        color: #39ff14;
-        font-weight: bold;
-        text-shadow: 0 0 5px #39ff14;
-    }
-    .loss {
-        color: #ff3333;
-        font-weight: bold;
-        text-shadow: 0 0 5px #ff3333;
-    }
-    .warning {
-        color: #ff6600;
-        font-weight: bold;
-        text-shadow: 0 0 5px #ff6600;
+    /* Placeholder cards for coming soon */
+    .placeholder-card {
+        background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
+        border: 2px dashed #ff6600;
+        border-radius: 8px;
+        padding: 30px;
+        margin: 15px 0;
+        text-align: center;
     }
     
-    /* Sidebar styling */
-    .css-1d391kg {
-        background: linear-gradient(180deg, #0d0d0d 0%, #1a1a1a 100%);
-        border-right: 1px solid #39ff14;
-    }
-    
-    /* Form inputs */
-    .stSelectbox > div > div {
-        background-color: #1a1a1a !important;
-        border: 1px solid #39ff14 !important;
-        color: #39ff14 !important;
-    }
-    
-    .stTextInput > div > div > input {
-        background-color: #1a1a1a !important;
-        border: 1px solid #39ff14 !important;
-        color: #39ff14 !important;
-    }
-    
-    .stNumberInput > div > div > input {
-        background-color: #1a1a1a !important;
-        border: 1px solid #39ff14 !important;
-        color: #39ff14 !important;
-    }
-    
-    .stTextArea > div > div > textarea {
-        background-color: #1a1a1a !important;
-        border: 1px solid #39ff14 !important;
-        color: #39ff14 !important;
-    }
-    
-    /* Buttons */
-    .stButton > button {
+    .coming-soon-badge {
         background: linear-gradient(145deg, #ff6600, #cc5200);
-        border: 1px solid #ff6600;
         color: #0a0a0a;
+        padding: 5px 15px;
+        border-radius: 20px;
         font-weight: bold;
-        font-family: 'IBM Plex Mono', monospace;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        box-shadow: 0 0 10px rgba(255, 102, 0, 0.5);
-        transition: all 0.3s ease;
+        font-size: 0.8rem;
+        display: inline-block;
+        margin-bottom: 10px;
     }
     
-    .stButton > button:hover {
-        background: linear-gradient(145deg, #ffaa00, #ff6600);
-        box-shadow: 0 0 15px rgba(255, 102, 0, 0.8);
-        transform: translateY(-1px);
-    }
+    /* Status indicators */
+    .profit { color: #39ff14; font-weight: bold; text-shadow: 0 0 5px #39ff14; }
+    .loss { color: #ff3333; font-weight: bold; text-shadow: 0 0 5px #ff3333; }
+    .warning { color: #ff6600; font-weight: bold; text-shadow: 0 0 5px #ff6600; }
     
     /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
-        background-color: #0d0d0d;
-        border-bottom: 2px solid #39ff14;
+        gap: 8px;
     }
     
     .stTabs [data-baseweb="tab"] {
@@ -218,54 +141,14 @@ st.markdown("""
         font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 1px;
-        margin-right: 5px;
+        border-radius: 5px;
+        padding: 10px 20px;
     }
     
     .stTabs [aria-selected="true"] {
         background: linear-gradient(145deg, #39ff14, #2dd60f) !important;
         color: #0a0a0a !important;
         box-shadow: 0 0 15px rgba(57, 255, 20, 0.6);
-    }
-    
-    /* Dataframe styling */
-    .dataframe {
-        background-color: #0d0d0d !important;
-        border: 1px solid #39ff14 !important;
-        font-family: 'IBM Plex Mono', monospace !important;
-    }
-    
-    /* Mission critical alerts */
-    .alert-success {
-        background: linear-gradient(145deg, #1a4d1a, #0d330d);
-        border: 1px solid #39ff14;
-        color: #39ff14;
-        padding: 15px;
-        border-radius: 5px;
-        font-family: 'IBM Plex Mono', monospace;
-        text-transform: uppercase;
-        font-weight: bold;
-    }
-    
-    .alert-danger {
-        background: linear-gradient(145deg, #4d1a1a, #330d0d);
-        border: 1px solid #ff3333;
-        color: #ff3333;
-        padding: 15px;
-        border-radius: 5px;
-        font-family: 'IBM Plex Mono', monospace;
-        text-transform: uppercase;
-        font-weight: bold;
-    }
-    
-    .alert-warning {
-        background: linear-gradient(145deg, #4d3d1a, #33280d);
-        border: 1px solid #ff6600;
-        color: #ff6600;
-        padding: 15px;
-        border-radius: 5px;
-        font-family: 'IBM Plex Mono', monospace;
-        text-transform: uppercase;
-        font-weight: bold;
     }
     
     /* Terminal-style background */
@@ -295,17 +178,13 @@ st.markdown("""
         51%, 100% { opacity: 0; }
     }
     
-    /* Metrics override for dark theme */
+    /* Metrics override */
     [data-testid="metric-container"] {
         background: linear-gradient(145deg, #1a1a1a, #0d0d0d) !important;
         border: 1px solid #39ff14 !important;
         padding: 15px !important;
         border-radius: 8px !important;
         box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) !important;
-    }
-    
-    [data-testid="metric-container"] > div {
-        color: #39ff14 !important;
     }
     
     [data-testid="metric-container"] [data-testid="metric-label"] {
@@ -323,6 +202,40 @@ st.markdown("""
         font-weight: 700 !important;
         font-size: 1.8rem !important;
         text-shadow: 0 0 5px #39ff14 !important;
+    }
+    
+    /* Alert styles */
+    .alert-success {
+        background: linear-gradient(145deg, #1a4d1a, #0d330d);
+        border: 1px solid #39ff14;
+        color: #39ff14;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: 'IBM Plex Mono', monospace;
+        text-transform: uppercase;
+        font-weight: bold;
+    }
+    
+    .alert-warning {
+        background: linear-gradient(145deg, #4d3d1a, #33280d);
+        border: 1px solid #ff6600;
+        color: #ff6600;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: 'IBM Plex Mono', monospace;
+        text-transform: uppercase;
+        font-weight: bold;
+    }
+    
+    .alert-danger {
+        background: linear-gradient(145deg, #4d1a1a, #330d0d);
+        border: 1px solid #ff3333;
+        color: #ff3333;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: 'IBM Plex Mono', monospace;
+        text-transform: uppercase;
+        font-weight: bold;
     }
     
     /* Footer styling */
@@ -343,294 +256,366 @@ st.markdown('<p class="main-header">🚀 MISSION CONTROL TRADING DASHBOARD</p>',
 st.markdown(f'<p class="mission-subtitle">$1K CRYPTO MISSION • LAST UPDATED: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} EST</p>', unsafe_allow_html=True)
 
 # Create tabs
-tab1, tab2 = st.tabs(["🎯 ACTIVE MISSION", "📊 BACKTESTING STRATEGIES"])
+tab1, tab2, tab3, tab4 = st.tabs(["🎯 MISSION CONTROL", "📊 POLYMARKET", "📰 NEWS TRADING", "🔬 BACKTESTING"])
 
+# ============================================
+# TAB 1: MISSION CONTROL (Home)
+# ============================================
 with tab1:
-    # Sidebar - Mission Control Panel
-    with st.sidebar:
-        st.markdown("### ⚡ MISSION CONTROL PANEL")
-
-        # New Trade Entry
-        st.markdown("#### 📝 NEW TRADE ENTRY")
-        with st.form("new_trade_form"):
-            prong = st.selectbox(
-                "MISSION PRONG",
-                ["News Trading", "Polymarket", "Algorithmic"]
-            )
-            
-            asset = st.text_input("ASSET/MARKET", placeholder="e.g., BTC, ETH, 'Trump 2024'")
-            
-            direction = st.selectbox("DIRECTION", ["Long", "Short"])
-            
-            entry_price = st.number_input("ENTRY PRICE ($)", min_value=0.0, step=0.01)
-            
-            position_size = st.number_input(
-                "POSITION SIZE ($)", 
-                min_value=0.0, 
-                max_value=float(st.session_state.allocations[prong]["available"]),
-                step=10.0
-            )
-            
-            target = st.number_input("TARGET ($)", min_value=0.0, step=0.01)
-            stop_loss = st.number_input("STOP LOSS ($)", min_value=0.0, step=0.01)
-            
-            notes = st.text_area("MISSION NOTES", placeholder="Strategy, catalyst, etc.")
-            
-            submitted = st.form_submit_button("🚀 EXECUTE TRADE")
-            
-            if submitted:
-                trade = {
-                    "id": len(st.session_state.trades) + 1,
-                    "timestamp": datetime.now().isoformat(),
-                    "prong": prong,
-                    "asset": asset,
-                    "direction": direction,
-                    "entry_price": entry_price,
-                    "position_size": position_size,
-                    "target": target,
-                    "stop_loss": stop_loss,
-                    "notes": notes,
-                    "status": "Open",
-                    "pnl": 0,
-                    "pnl_pct": 0
-                }
-                st.session_state.trades.append(trade)
-                st.session_state.allocations[prong]["used"] += position_size
-                st.session_state.allocations[prong]["available"] -= position_size
-                st.markdown(f'<div class="alert-success">TRADE EXECUTED! {prong}: ${position_size:.2f}</div>', unsafe_allow_html=True)
-
-        # Close Position Form
-        st.markdown("#### 🔒 CLOSE POSITION")
-        with st.form("close_trade_form"):
-            open_trades = [t for t in st.session_state.trades if t["status"] == "Open"] if st.session_state.trades else []
-            if open_trades:
-                trade_options = {f"#{t['id']} - {t['asset']} ({t['prong']})": t for t in open_trades}
-                selected_trade_key = st.selectbox("SELECT POSITION", list(trade_options.keys()))
-                selected_trade = trade_options[selected_trade_key]
-                
-                exit_price = st.number_input("EXIT PRICE ($)", min_value=0.0, step=0.01)
-                
-                close_submitted = st.form_submit_button("🔒 CLOSE POSITION")
-                
-                if close_submitted:
-                        # Calculate P&L
-                        trade_idx = st.session_state.trades.index(selected_trade)
-                        entry = selected_trade["entry_price"]
-                        direction = 1 if selected_trade["direction"] == "Long" else -1
-                        
-                        pnl_pct = ((exit_price - entry) / entry) * direction * 100
-                        pnl_amount = selected_trade["position_size"] * (pnl_pct / 100)
-                        
-                        st.session_state.trades[trade_idx]["status"] = "Closed"
-                        st.session_state.trades[trade_idx]["exit_price"] = exit_price
-                        st.session_state.trades[trade_idx]["pnl"] = pnl_amount
-                        st.session_state.trades[trade_idx]["pnl_pct"] = pnl_pct
-                        st.session_state.trades[trade_idx]["close_timestamp"] = datetime.now().isoformat()
-                        
-                        # Return allocation
-                        prong = selected_trade["prong"]
-                        st.session_state.allocations[prong]["used"] -= selected_trade["position_size"]
-                        st.session_state.allocations[prong]["available"] += selected_trade["position_size"]
-                        
-                        alert_class = "alert-success" if pnl_amount >= 0 else "alert-danger"
-                        st.markdown(f'<div class="{alert_class}">POSITION CLOSED! P&L: ${pnl_amount:+.2f} ({pnl_pct:+.2f}%)</div>', unsafe_allow_html=True)
-            else:
-                st.markdown('<div class="alert-warning">NO OPEN POSITIONS</div>', unsafe_allow_html=True)
-                st.form_submit_button("🔒 CLOSE POSITION", disabled=True)
-
-        # Export data
-        st.markdown("#### 💾 DATA EXPORT")
-        if st.button("📥 EXPORT MISSION DATA"):
-            data = {
-                "trades": st.session_state.trades,
-                "allocations": st.session_state.allocations,
-                "export_time": datetime.now().isoformat()
-            }
-            st.download_button(
-                label="DOWNLOAD TRADES.JSON",
-                data=json.dumps(data, indent=2),
-                file_name=f"mission_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                mime="application/json"
-            )
-
-    # Main Dashboard
-    # Row 1: Mission Status Indicators
+    # Row 1: Primary Mission Metrics
     col1, col2, col3, col4 = st.columns(4)
-
+    
     with col1:
-        total_allocated = sum(a["allocated"] for a in st.session_state.allocations.values())
-        total_used = sum(a["used"] for a in st.session_state.allocations.values())
         st.metric(
-            "💰 MISSION CAPITAL",
-            f"${total_allocated:,.0f}",
-            f"DEPLOYED: ${total_used:,.0f}"
+            "💰 TOTAL BALANCE",
+            f"${TOTAL_BALANCE:,.2f}",
+            f"FROM ${STARTING_BALANCE:,.2f}"
         )
-
+    
     with col2:
-        closed_trades = [t for t in st.session_state.trades if t["status"] == "Closed"]
-        total_pnl = sum(t["pnl"] for t in closed_trades) if closed_trades else 0
-        pnl_color = "🟢" if total_pnl >= 0 else "🔴"
-        delta_color = "normal" if total_pnl >= 0 else "inverse"
+        pnl_delta = "normal" if CURRENT_PNL >= 0 else "inverse"
+        pnl_status = "🟢 PROFIT" if CURRENT_PNL >= 0 else "🔴 LOSS"
         st.metric(
-            "📈 MISSION P&L",
-            f"${total_pnl:+.2f}",
-            f"{pnl_color} STATUS",
-            delta_color=delta_color
+            "📈 CURRENT P&L",
+            f"${CURRENT_PNL:+.2f}",
+            f"{(CURRENT_PNL/STARTING_BALANCE*100):+.2f}%",
+            delta_color=pnl_delta
         )
-
+    
     with col3:
-        open_count = len([t for t in st.session_state.trades if t["status"] == "Open"])
+        # Expected daily based on best backtest strategy (RSI+Volume: ~5.15% monthly)
+        expected_daily = TOTAL_BALANCE * 0.0017  # ~0.17% daily
         st.metric(
-            "🔓 ACTIVE POSITIONS",
-            f"{open_count}",
-            "MONITORING"
+            "📊 EXPECTED DAILY",
+            f"${expected_daily:+.2f}",
+            "BASED ON BACKTEST"
         )
-
+    
     with col4:
-        if closed_trades:
-            win_rate = (len([t for t in closed_trades if t["pnl"] > 0]) / len(closed_trades)) * 100
-        else:
-            win_rate = 0
-        status = "🎯 OPTIMAL" if win_rate >= 50 else "⚠️ REVIEW" if win_rate >= 30 else "🚨 CRITICAL"
+        expected_monthly = TOTAL_BALANCE * 0.0515  # ~5.15% monthly from best strategy
         st.metric(
-            "🎯 WIN RATE",
-            f"{win_rate:.1f}%",
-            f"{status} • {len(closed_trades)} TRADES"
+            "📅 EXPECTED MONTHLY",
+            f"${expected_monthly:+.2f}",
+            "+5.15% TARGET"
         )
-
+    
     st.divider()
-
-    # Row 2: Capital Allocation and Trade Log
-    col1, col2 = st.columns([1, 2])
-
+    
+    # Row 2: P&L Projections
+    st.subheader("📊 P&L PROJECTIONS (Based on Backtested Strategies)")
+    
+    col1, col2, col3 = st.columns(3)
+    
     with col1:
-        st.subheader("📊 CAPITAL ALLOCATION MATRIX")
-        
-        alloc_data = []
-        for prong, data in st.session_state.allocations.items():
-            alloc_data.append({
-                "PRONG": prong,
-                "ALLOCATED": data["allocated"],
-                "DEPLOYED": data["used"],
-                "AVAILABLE": data["available"],
-                "UTILIZATION %": (data["used"] / data["allocated"]) * 100 if data["allocated"] > 0 else 0
-            })
-        
-        alloc_df = pd.DataFrame(alloc_data)
-        st.dataframe(
-            alloc_df,
-            column_config={
-                "ALLOCATED": st.column_config.NumberColumn("ALLOCATED", format="$%.0f"),
-                "DEPLOYED": st.column_config.NumberColumn("DEPLOYED", format="$%.0f"),
-                "AVAILABLE": st.column_config.NumberColumn("AVAILABLE", format="$%.0f"),
-                "UTILIZATION %": st.column_config.NumberColumn("UTILIZATION", format="%.1f%%")
-            },
-            width='stretch',
-            hide_index=True
-        )
-        
-        # Allocation pie chart with NASA colors
-        fig = go.Figure(data=[go.Pie(
-            labels=list(st.session_state.allocations.keys()),
-            values=[a["used"] for a in st.session_state.allocations.values()],
-            hole=.4,
-            textinfo='label+percent',
-            textposition='outside',
-            marker=dict(
-                colors=['#39ff14', '#ff6600', '#00ffff'],
-                line=dict(color='#0a0a0a', width=2)
-            )
-        )])
-        fig.update_layout(
-            title="CAPITAL DEPLOYMENT BY PRONG",
-            showlegend=False,
-            height=300,
-            font=dict(family="IBM Plex Mono, monospace", color="#39ff14"),
-            paper_bgcolor='#0a0a0a',
-            plot_bgcolor='#0a0a0a'
-        )
-        st.plotly_chart(fig, width='stretch')
-
+        st.markdown("""
+        <div class="metric-card">
+        <h4 style="color: #ff6600;">📆 DAILY PROJECTION</h4>
+        <p style="color: #39ff14; font-size: 1.5rem; font-weight: bold;">+$0.59</p>
+        <p style="color: #aaa; font-size: 0.9rem;">+0.17% (conservative)</p>
+        <hr style="border-color: #333;">
+        <p style="color: #888; font-size: 0.8rem;">Based on RSI+Volume strategy<br>with 10 trades/month average</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
     with col2:
-        st.subheader("📋 MISSION TRADE LOG")
-        
-        if st.session_state.trades:
-            trades_df = pd.DataFrame(st.session_state.trades)
-            trades_df["TIMESTAMP"] = pd.to_datetime(trades_df["timestamp"]).dt.strftime("%m/%d %H:%M")
-            
-            display_cols = ["id", "TIMESTAMP", "prong", "asset", "direction", "position_size", "status", "pnl"]
-            if "close_timestamp" in trades_df.columns:
-                trades_df["CLOSE_TIME"] = pd.to_datetime(trades_df["close_timestamp"]).dt.strftime("%m/%d %H:%M")
-                display_cols.append("CLOSE_TIME")
-            
-            # Rename columns for display
-            display_df = trades_df[display_cols].copy()
-            display_df.columns = ["ID", "TIME", "PRONG", "ASSET", "DIR", "SIZE", "STATUS", "P&L", "CLOSE"] if len(display_cols) == 9 else ["ID", "TIME", "PRONG", "ASSET", "DIR", "SIZE", "STATUS", "P&L"]
-            
-            st.dataframe(
-                display_df,
-                width='stretch',
-                hide_index=True,
-                height=400
-            )
-        else:
-            st.markdown('<div class="alert-warning">NO MISSION DATA YET. INITIALIZE FIRST TRADE VIA CONTROL PANEL.</div>', unsafe_allow_html=True)
-
+        st.markdown("""
+        <div class="metric-card">
+        <h4 style="color: #ff6600;">📅 WEEKLY PROJECTION</h4>
+        <p style="color: #39ff14; font-size: 1.5rem; font-weight: bold;">+$4.15</p>
+        <p style="color: #aaa; font-size: 0.9rem;">+1.19% (2-3 trades)</p>
+        <hr style="border-color: #333;">
+        <p style="color: #888; font-size: 0.8rem;">Assuming 40% win rate<br>with 1:3 risk/reward ratio</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div class="metric-card">
+        <h4 style="color: #ff6600;">📆 MONTHLY PROJECTION</h4>
+        <p style="color: #39ff14; font-size: 1.5rem; font-weight: bold;">+$17.97</p>
+        <p style="color: #aaa; font-size: 0.9rem;">+5.15% (10 trades)</p>
+        <hr style="border-color: #333;">
+        <p style="color: #888; font-size: 0.8rem;">Sharpe ratio: 14.64<br>Max drawdown: 1.62%</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
     st.divider()
+    
+    # Row 3: Trade Statistics
+    st.subheader("📈 TRADE STATISTICS")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        <div class="metric-card" style="border-color: #39ff14;">
+        <h4 style="color: #39ff14;">✅ WINNING TRADES</h4>
+        <p style="color: #39ff14; font-size: 2rem; font-weight: bold;">0</p>
+        <hr style="border-color: #333;">
+        <p style="color: #aaa;">Total Profit: $0.00</p>
+        <p style="color: #aaa;">Avg Win: $0.00</p>
+        <p style="color: #aaa;">Largest Win: $0.00</p>
+        <p style="color: #888; font-size: 0.8rem; margin-top: 10px;">📊 No trades executed yet</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="metric-card" style="border-color: #ff3333;">
+        <h4 style="color: #ff3333;">❌ LOSING TRADES</h4>
+        <p style="color: #ff3333; font-size: 2rem; font-weight: bold;">0</p>
+        <hr style="border-color: #333;">
+        <p style="color: #aaa;">Total Loss: $0.00</p>
+        <p style="color: #aaa;">Avg Loss: $0.00</p>
+        <p style="color: #aaa;">Largest Loss: $0.00</p>
+        <p style="color: #888; font-size: 0.8rem; margin-top: 10px;">📊 No trades executed yet</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.divider()
+    
+    # Row 4: Strategy Summary
+    st.subheader("🔬 BACKTESTING STRATEGY SUMMARY")
+    
+    st.markdown("""
+    <div class="terminal-bg">
+    <h4 style="color: #ff6600;">TOP 3 PERFORMING STRATEGIES (5m candles, 1 week test period)</h4>
+    <p style="color: #888; font-size: 0.8rem; margin-bottom: 15px;">⚠️ Static data - not auto-updating yet</p>
+    
+    <table style="width: 100%; color: #39ff14; font-family: 'IBM Plex Mono', monospace;">
+    <tr style="border-bottom: 1px solid #333;">
+        <th style="text-align: left; padding: 10px; color: #ff6600;">RANK</th>
+        <th style="text-align: left; padding: 10px; color: #ff6600;">STRATEGY</th>
+        <th style="text-align: right; padding: 10px; color: #ff6600;">RETURN</th>
+        <th style="text-align: right; padding: 10px; color: #ff6600;">SHARPE</th>
+        <th style="text-align: right; padding: 10px; color: #ff6600;">WIN RATE</th>
+    </tr>
+    <tr>
+        <td style="padding: 10px;">🥇</td>
+        <td style="padding: 10px;">RSI + Volume Confirmation</td>
+        <td style="padding: 10px; text-align: right; color: #39ff14;">+5.15%</td>
+        <td style="padding: 10px; text-align: right;">14.64</td>
+        <td style="padding: 10px; text-align: right;">40.1%</td>
+    </tr>
+    <tr>
+        <td style="padding: 10px;">🥈</td>
+        <td style="padding: 10px;">Multi-Factor Composite</td>
+        <td style="padding: 10px; text-align: right; color: #39ff14;">+2.15%</td>
+        <td style="padding: 10px; text-align: right;">5.66</td>
+        <td style="padding: 10px; text-align: right;">33.3%</td>
+    </tr>
+    <tr>
+        <td style="padding: 10px;">🥉</td>
+        <td style="padding: 10px;">RSI Mean Reversion</td>
+        <td style="padding: 10px; text-align: right; color: #39ff14;">+2.12%</td>
+        <td style="padding: 10px; text-align: right;">6.91</td>
+        <td style="padding: 10px; text-align: right;">31.6%</td>
+    </tr>
+    </table>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Capital Allocation Overview
+    st.subheader("💰 CAPITAL ALLOCATION")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("📰 NEWS TRADING", f"${NEWS_TRADING_ALLOCATION:,.2f}", "40% ALLOCATION")
+    
+    with col2:
+        st.metric("📊 POLYMARKET", f"${POLYMARKET_ALLOCATION:,.2f}", "30% ALLOCATION")
+    
+    with col3:
+        st.metric("🤖 ALGORITHMIC", f"${ALGORITHMIC_ALLOCATION:,.2f}", "30% ALLOCATION")
 
-    # Row 3: Performance Analysis
-    if closed_trades:
-        st.subheader("📉 MISSION PERFORMANCE ANALYSIS")
-        
-        perf_data = []
-        cumulative_pnl = 0
-        for trade in sorted(closed_trades, key=lambda x: x["close_timestamp"]):
-            cumulative_pnl += trade["pnl"]
-            perf_data.append({
-                "date": pd.to_datetime(trade["close_timestamp"]),
-                "cumulative_pnl": cumulative_pnl,
-                "trade_pnl": trade["pnl"]
-            })
-        
-        perf_df = pd.DataFrame(perf_data)
-        
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=perf_df["date"],
-            y=perf_df["cumulative_pnl"],
-            mode='lines+markers',
-            name='CUMULATIVE P&L',
-            line=dict(color='#39ff14', width=3),
-            fill='tozeroy',
-            fillcolor='rgba(57, 255, 20, 0.1)'
-        ))
-        
-        fig.update_layout(
-            title="MISSION PERFORMANCE TRAJECTORY",
-            xaxis_title="MISSION TIME",
-            yaxis_title="CUMULATIVE P&L ($)",
-            height=400,
-            hovermode='x unified',
-            font=dict(family="IBM Plex Mono, monospace", color="#39ff14"),
-            paper_bgcolor='#0a0a0a',
-            plot_bgcolor='#0d0d0d',
-            xaxis=dict(gridcolor='#1a1a1a'),
-            yaxis=dict(gridcolor='#1a1a1a')
-        )
-        
-        st.plotly_chart(fig, width='stretch')
-
+# ============================================
+# TAB 2: POLYMARKET
+# ============================================
 with tab2:
-    st.subheader("📊 BACKTESTING STRATEGIES • NASA ANALYSIS CENTER")
+    st.subheader("📊 POLYMARKET TRADING MODULE")
+    
+    # Allocated Capital Display
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("💰 ALLOCATED CAPITAL", f"${POLYMARKET_ALLOCATION:,.2f}", "30% OF PORTFOLIO")
+    
+    with col2:
+        st.metric("📈 DEPLOYED", "$0.00", "0% UTILIZED")
+    
+    with col3:
+        st.metric("💵 AVAILABLE", f"${POLYMARKET_ALLOCATION:,.2f}", "READY TO DEPLOY")
+    
+    st.divider()
+    
+    # Coming Soon Section
+    st.markdown("""
+    <div class="placeholder-card">
+        <span class="coming-soon-badge">🚧 COMING SOON</span>
+        <h3 style="color: #39ff14; margin: 15px 0;">POLYMARKET API INTEGRATION</h3>
+        <p style="color: #aaa; max-width: 600px; margin: 0 auto;">
+            Prediction market trading integration pending. This module will provide:
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Feature Cards
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        <div class="metric-card" style="border-color: #ff6600; opacity: 0.7;">
+        <h4 style="color: #ff6600;">📊 ACTIVE MARKETS</h4>
+        <p style="color: #666; font-size: 1.5rem;">--</p>
+        <hr style="border-color: #333;">
+        <p style="color: #888; font-size: 0.9rem;">• Live market listings</p>
+        <p style="color: #888; font-size: 0.9rem;">• Real-time odds tracking</p>
+        <p style="color: #888; font-size: 0.9rem;">• Market sentiment analysis</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div class="metric-card" style="border-color: #ff6600; opacity: 0.7;">
+        <h4 style="color: #ff6600;">📈 OPEN POSITIONS</h4>
+        <p style="color: #666; font-size: 1.5rem;">--</p>
+        <hr style="border-color: #333;">
+        <p style="color: #888; font-size: 0.9rem;">• Position tracking</p>
+        <p style="color: #888; font-size: 0.9rem;">• Entry/exit prices</p>
+        <p style="color: #888; font-size: 0.9rem;">• Unrealized P&L</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="metric-card" style="border-color: #ff6600; opacity: 0.7;">
+        <h4 style="color: #ff6600;">💰 P&L TRACKING</h4>
+        <p style="color: #666; font-size: 1.5rem;">$0.00</p>
+        <hr style="border-color: #333;">
+        <p style="color: #888; font-size: 0.9rem;">• Realized gains/losses</p>
+        <p style="color: #888; font-size: 0.9rem;">• Win rate statistics</p>
+        <p style="color: #888; font-size: 0.9rem;">• ROI by market type</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div class="metric-card" style="border-color: #ff6600; opacity: 0.7;">
+        <h4 style="color: #ff6600;">🎯 MARKET ALERTS</h4>
+        <p style="color: #666; font-size: 1.5rem;">--</p>
+        <hr style="border-color: #333;">
+        <p style="color: #888; font-size: 0.9rem;">• Price movement alerts</p>
+        <p style="color: #888; font-size: 0.9rem;">• Resolution notifications</p>
+        <p style="color: #888; font-size: 0.9rem;">• Opportunity detection</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class="alert-warning" style="margin-top: 20px;">
+    ⏳ API INTEGRATION PENDING • Polymarket API access being configured • Check back soon for live trading features
+    </div>
+    """, unsafe_allow_html=True)
+
+# ============================================
+# TAB 3: NEWS TRADING
+# ============================================
+with tab3:
+    st.subheader("📰 NEWS TRADING MODULE")
+    
+    # Allocated Capital Display
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("💰 ALLOCATED CAPITAL", f"${NEWS_TRADING_ALLOCATION:,.2f}", "40% OF PORTFOLIO")
+    
+    with col2:
+        st.metric("📈 DEPLOYED", "$0.00", "0% UTILIZED")
+    
+    with col3:
+        st.metric("💵 AVAILABLE", f"${NEWS_TRADING_ALLOCATION:,.2f}", "READY TO DEPLOY")
+    
+    st.divider()
+    
+    # Coming Soon Section
+    st.markdown("""
+    <div class="placeholder-card">
+        <span class="coming-soon-badge">🚧 COMING SOON</span>
+        <h3 style="color: #39ff14; margin: 15px 0;">NEWS TRADING API INTEGRATION</h3>
+        <p style="color: #aaa; max-width: 600px; margin: 0 auto;">
+            Real-time news sentiment trading integration pending. This module will provide:
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Feature Cards
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        <div class="metric-card" style="border-color: #ff6600; opacity: 0.7;">
+        <h4 style="color: #ff6600;">📰 NEWS SIGNALS</h4>
+        <p style="color: #666; font-size: 1.5rem;">--</p>
+        <hr style="border-color: #333;">
+        <p style="color: #888; font-size: 0.9rem;">• Real-time news feed</p>
+        <p style="color: #888; font-size: 0.9rem;">• Sentiment analysis</p>
+        <p style="color: #888; font-size: 0.9rem;">• Impact scoring</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div class="metric-card" style="border-color: #ff6600; opacity: 0.7;">
+        <h4 style="color: #ff6600;">📈 ACTIVE TRADES</h4>
+        <p style="color: #666; font-size: 1.5rem;">--</p>
+        <hr style="border-color: #333;">
+        <p style="color: #888; font-size: 0.9rem;">• News-triggered positions</p>
+        <p style="color: #888; font-size: 0.9rem;">• Entry/exit tracking</p>
+        <p style="color: #888; font-size: 0.9rem;">• Time-based exits</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="metric-card" style="border-color: #ff6600; opacity: 0.7;">
+        <h4 style="color: #ff6600;">🔔 ALERT FEED</h4>
+        <p style="color: #666; font-size: 1.5rem;">--</p>
+        <hr style="border-color: #333;">
+        <p style="color: #888; font-size: 0.9rem;">• Breaking news alerts</p>
+        <p style="color: #888; font-size: 0.9rem;">• Market-moving events</p>
+        <p style="color: #888; font-size: 0.9rem;">• Telegram notifications</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div class="metric-card" style="border-color: #ff6600; opacity: 0.7;">
+        <h4 style="color: #ff6600;">💰 NEWS P&L</h4>
+        <p style="color: #666; font-size: 1.5rem;">$0.00</p>
+        <hr style="border-color: #333;">
+        <p style="color: #888; font-size: 0.9rem;">• News trade performance</p>
+        <p style="color: #888; font-size: 0.9rem;">• Win rate by news type</p>
+        <p style="color: #888; font-size: 0.9rem;">• Avg reaction time</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class="alert-warning" style="margin-top: 20px;">
+    ⏳ API INTEGRATION PENDING • News sentiment API being configured • Check back soon for live news trading
+    </div>
+    """, unsafe_allow_html=True)
+
+# ============================================
+# TAB 4: BACKTESTING STRATEGIES
+# ============================================
+with tab4:
+    st.subheader("🔬 BACKTESTING STRATEGIES • NASA ANALYSIS CENTER")
     
     # Backtest Results Summary
     st.markdown("""
     <div class="terminal-bg">
     <h4 style="color: #ff6600; margin-bottom: 20px;">🚀 MISSION: ALTERNATIVE DATA STRATEGY TESTING</h4>
-    <p><strong>TEST PERIOD:</strong> Last 30 days of 5-minute data</p>
+    <p><strong>TEST PERIOD:</strong> 5-minute candles over 1 week</p>
     <p><strong>ASSETS:</strong> BTC, ETH, SOL</p>
     <p><strong>ACCOUNT SIZE:</strong> $350</p>
     <p><strong>STRATEGIES TESTED:</strong> 7</p>
+    <p style="color: #ff6600; margin-top: 10px;">⚠️ STATIC DATA - These results are from historical backtests and are not auto-updating yet</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -650,7 +635,7 @@ with tab2:
     strategy_df = pd.DataFrame(strategy_data)
     st.dataframe(
         strategy_df,
-        width='stretch',
+        use_container_width=True,
         hide_index=True,
         height=350
     )
@@ -742,45 +727,6 @@ with tab2:
         </div>
         """, unsafe_allow_html=True)
     
-    # Implementation Guide
-    st.markdown("### 🚀 IMPLEMENTATION PROTOCOL FOR $350 MISSION")
-    
-    st.markdown("""
-    <div class="terminal-bg">
-    <h4 style="color: #39ff14;">RECOMMENDED MISSION SETUP:</h4>
-    
-    <pre style="color: #39ff14; background: #0d0d0d; padding: 15px; border-radius: 5px;">
-# PRIMARY STRATEGY: RSI + Volume Confirmation
-def mission_signal(df):
-    rsi = calculate_rsi(df['close'], 14)
-    volume_sma = df['volume'].rolling(20).mean()
-    
-    if rsi.iloc[-1] < 30 and df['volume'].iloc[-1] > volume_sma.iloc[-1] * 1.5:
-        return 'BUY'  # 🟢 EXECUTE LONG
-    elif rsi.iloc[-1] > 70 and df['volume'].iloc[-1] > volume_sma.iloc[-1] * 1.5:
-        return 'SELL'  # 🔴 EXECUTE SHORT
-    return 'HOLD'  # ⚪ MAINTAIN POSITION
-
-# RISK MANAGEMENT PROTOCOL
-max_risk_per_trade = 0.03  # 3% of account per trade
-position_size = account_balance * max_risk_per_trade / (atr * price)
-    </pre>
-    
-    <h4 style="color: #ff6600; margin-top: 20px;">MISSION TRADING RULES:</h4>
-    <p><strong>TRADE FREQUENCY:</strong> Max 1-2 trades per week per asset</p>
-    <p><strong>POSITION SIZE:</strong> Risk 2-3% per trade ($7-10 on $350 account)</p>
-    <p><strong>STOP LOSS:</strong> 1.5x ATR from entry</p>
-    <p><strong>TAKE PROFIT:</strong> 3x risk (1:3 risk/reward ratio)</p>
-    <p><strong>MAX POSITIONS:</strong> 2 concurrent trades maximum</p>
-    
-    <h4 style="color: #ff6600; margin-top: 20px;">MISSION CRITICAL METRICS:</h4>
-    <p><strong>TARGET WIN RATE:</strong> > 50%</p>
-    <p><strong>TARGET SHARPE:</strong> > 1.0</p>
-    <p><strong>MAX DRAWDOWN:</strong> < 5%</p>
-    <p><strong>MONTHLY TRADES:</strong> 5-10</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
     # What Works vs What Doesn't
     col1, col2 = st.columns(2)
     
@@ -807,5 +753,4 @@ position_size = account_balance * max_risk_per_trade / (atr * price)
         """, unsafe_allow_html=True)
 
 # Footer
-st.markdown('<div class="footer">🚀 BUILT FOR THE $1K CRYPTO TRADING MISSION | NASA MISSION CONTROL AESTHETIC | STREAMLIT DASHBOARD v2.0</div>', unsafe_allow_html=True)
-# Deployed: 2026-01-30T16:44:02Z
+st.markdown(f'<div class="footer">🚀 BUILT FOR THE $1K CRYPTO TRADING MISSION | NASA MISSION CONTROL AESTHETIC | v3.0 | Balance: ${TOTAL_BALANCE:.2f}</div>', unsafe_allow_html=True)
