@@ -526,7 +526,7 @@ with tab1:
                 "AVAILABLE": st.column_config.NumberColumn("AVAILABLE", format="$%.0f"),
                 "UTILIZATION %": st.column_config.NumberColumn("UTILIZATION", format="%.1f%%")
             },
-            width="100%",
+            width='stretch',
             hide_index=True
         )
         
@@ -550,7 +550,7 @@ with tab1:
             paper_bgcolor='#0a0a0a',
             plot_bgcolor='#0a0a0a'
         )
-        st.plotly_chart(fig, width="100%")
+        st.plotly_chart(fig, width='stretch')
 
     with col2:
         st.subheader("📋 MISSION TRADE LOG")
@@ -570,7 +570,7 @@ with tab1:
             
             st.dataframe(
                 display_df,
-                width="100%",
+                width='stretch',
                 hide_index=True,
                 height=400
             )
@@ -619,7 +619,7 @@ with tab1:
             yaxis=dict(gridcolor='#1a1a1a')
         )
         
-        st.plotly_chart(fig, width="100%")
+        st.plotly_chart(fig, width='stretch')
 
 with tab2:
     st.subheader("📊 BACKTESTING STRATEGIES • NASA ANALYSIS CENTER")
@@ -651,7 +651,7 @@ with tab2:
     strategy_df = pd.DataFrame(strategy_data)
     st.dataframe(
         strategy_df,
-        width="100%",
+        width='stretch',
         hide_index=True,
         height=350
     )
