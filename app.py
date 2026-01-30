@@ -63,7 +63,8 @@ st.markdown("""
         position: relative;
     }
     
-    /* CRT scanlines effect */
+    /* CRT scanlines effect - disabled for visibility */
+    /*
     .stApp::after {
         content: "";
         position: fixed;
@@ -82,10 +83,15 @@ st.markdown("""
         z-index: 1000;
         animation: scanlines 0.1s linear infinite;
     }
+    */
     
-    @keyframes scanlines {
-        0% { transform: translateY(0px); }
-        100% { transform: translateY(2px); }
+    /* Force text visibility */
+    .stApp, .stApp * {
+        color: #39ff14 !important;
+    }
+    
+    .stApp p, .stApp span, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp h4 {
+        color: #39ff14 !important;
     }
     
     /* Headers and text */
