@@ -415,8 +415,8 @@ with tab1:
                 exit_price = st.number_input("EXIT PRICE ($)", min_value=0.0, step=0.01)
                 
                 close_submitted = st.form_submit_button("🔒 CLOSE POSITION")
-                    
-                    if close_submitted:
+                
+                if close_submitted:
                         # Calculate P&L
                         trade_idx = st.session_state.trades.index(selected_trade)
                         entry = selected_trade["entry_price"]
