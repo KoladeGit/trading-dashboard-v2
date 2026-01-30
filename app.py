@@ -55,12 +55,9 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap');
     
-    /* Global dark theme */
+    /* Global dark theme - using Streamlit native theme instead */
     .stApp {
-        background: linear-gradient(135deg, #0a0a0a 0%, #111111 100%);
-        color: #39ff14;
         font-family: 'IBM Plex Mono', monospace !important;
-        position: relative;
     }
     
     /* CRT scanlines effect - disabled for visibility */
@@ -85,14 +82,7 @@ st.markdown("""
     }
     */
     
-    /* Force text visibility */
-    .stApp, .stApp * {
-        color: #39ff14 !important;
-    }
-    
-    .stApp p, .stApp span, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp h4 {
-        color: #39ff14 !important;
-    }
+    /* Using Streamlit native dark theme */
     
     /* Headers and text */
     .main-header {
