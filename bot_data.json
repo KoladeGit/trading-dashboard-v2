@@ -1,14 +1,14 @@
 {
-  "last_updated": "2026-01-31T05:00:07.706016",
+  "last_updated": "2026-01-31T06:00:07.820836",
   "account": {
-    "total_usd": 338.28,
+    "total_usd": 338.68,
     "balances": [
       {
         "currency": "ETH",
         "amount": 0.12538547,
         "free": 0.12538547,
         "used": 0.0,
-        "usd_value": 332.35
+        "usd_value": 332.75
       },
       {
         "currency": "USD",
@@ -50,25 +50,25 @@
   "markets": [
     {
       "symbol": "BTC/USDT",
-      "price": 83184.34,
-      "change_24h": 0.951,
-      "volume_24h": 1669385.4425575,
+      "price": 83130.0,
+      "change_24h": 0.354,
+      "volume_24h": 1673152.0134416,
       "high_24h": 84587.98,
       "low_24h": 81928.83
     },
     {
       "symbol": "ETH/USDT",
-      "price": 2650.63,
-      "change_24h": -2.725,
-      "volume_24h": 2588118.381368,
+      "price": 2653.83,
+      "change_24h": -3.021,
+      "volume_24h": 2538847.746758,
       "high_24h": 2766.83,
       "low_24h": 2607.31
     },
     {
       "symbol": "SOL/USDT",
-      "price": 116.36,
-      "change_24h": 1.024,
-      "volume_24h": 239189.54329,
+      "price": 116.85,
+      "change_24h": 0.802,
+      "volume_24h": 238449.56155,
       "high_24h": 119.04,
       "low_24h": 114.3
     },
@@ -82,33 +82,33 @@
     },
     {
       "symbol": "ARB/USDT",
-      "price": 0.151,
-      "change_24h": -2.706,
-      "volume_24h": 343.42585,
+      "price": 0.1519,
+      "change_24h": -2.503,
+      "volume_24h": 343.42693,
       "high_24h": 0.1581,
       "low_24h": 0.1498
     },
     {
       "symbol": "LINK/USDT",
-      "price": 10.58,
-      "change_24h": -1.946,
-      "volume_24h": 18812.7069,
+      "price": 10.55,
+      "change_24h": -2.043,
+      "volume_24h": 18156.3292,
       "high_24h": 10.99,
       "low_24h": 10.38
     },
     {
       "symbol": "DOGE/USDT",
-      "price": 0.11204,
-      "change_24h": -1.199,
-      "volume_24h": 120772.10142,
+      "price": 0.11233,
+      "change_24h": -1.499,
+      "volume_24h": 120285.05717,
       "high_24h": 0.11863,
       "low_24h": 0.11049
     },
     {
       "symbol": "ADA/USDT",
-      "price": 0.3113,
-      "change_24h": -3.652,
-      "volume_24h": 253972.04881,
+      "price": 0.3131,
+      "change_24h": -3.75,
+      "volume_24h": 255258.92848,
       "high_24h": 0.3317,
       "low_24h": 0.308
     },
@@ -122,11 +122,11 @@
     },
     {
       "symbol": "DOT/USDT",
-      "price": 1.625,
-      "change_24h": -5.523,
-      "volume_24h": 4552.04185,
+      "price": 1.652,
+      "change_24h": -2.995,
+      "volume_24h": 4651.4576,
       "high_24h": 1.725,
-      "low_24h": 1.624
+      "low_24h": 1.622
     }
   ],
   "positions": [],
