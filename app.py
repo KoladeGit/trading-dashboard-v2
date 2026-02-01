@@ -301,41 +301,226 @@ with tab1:
     
     st.divider()
     
-    # Row 2: P&L Projections
-    st.subheader("📊 P&L PROJECTIONS (Based on Backtested Strategies)")
+    # Row 2: P&L PROJECTIONS - REAL MATH FROM TRADE HISTORY
+    st.subheader("📊 P&L PROJECTIONS (Calculated from Actual Trades)")
     
-    col1, col2, col3 = st.columns(3)
+    # Calculate real metrics from trade history
+    trades = BOT_DATA.get('recent_trades', [])
+    total_trades = len(trades)
     
-    with col1:
-        st.markdown("""
-        <div class="metric-card">
-        <h4 style="color: #ff6600;">📆 DAILY PROJECTION</h4>
-        <p style="color: #39ff14; font-size: 1.5rem; font-weight: bold;">+$0.59</p>
-        <p style="color: #aaa; font-size: 0.9rem;">+0.17% (conservative)</p>
-        <hr style="border-color: #333;">
-        <p style="color: #888; font-size: 0.8rem;">Based on RSI+Volume strategy<br>with 10 trades/month average</p>
+    if total_trades >= 10:
+        # Calculate real metrics
+        winning_trades_list = [t for t in trades if t.get('pnl', 0) > 0]
+        losing_trades_list = [t for t in trades if t.get('pnl', 0) <= 0]
+        
+        win_count = len(winning_trades_list)
+        loss_count = len(losing_trades_list)
+        win_rate = win_count / total_trades if total_trades > 0 else 0
+        
+        avg_win = sum(t.get('pnl', 0) for t in winning_trades_list) / win_count if win_count > 0 else 0
+        avg_loss = abs(sum(t.get('pnl', 0) for t in losing_trades_list) / loss_count) if loss_count > 0 else 0
+        
+        # Calculate trade frequency (trades per day)
+        if total_trades >= 2:
+            first_trade_time = datetime.fromisoformat(trades[0].get('entry_time', '').replace('Z', ''))
+            last_trade_time = datetime.fromisoformat(trades[-1].get('exit_time', '').replace('Z', ''))
+            days_span = max((last_trade_time - first_trade_time).days, 1)
+            avg_daily_trades = total_trades / days_span
+        else:
+            avg_daily_trades = 1
+        
+        # PROJECTION FORMULA:
+        # Daily = (avg_daily_trades × win_rate × avg_win) - (avg_daily_trades × (1-win_rate) × avg_loss)
+        daily_expected_wins = avg_daily_trades * win_rate * avg_win
+        daily_expected_losses = avg_daily_trades * (1 - win_rate) * avg_loss
+        daily_projection = daily_expected_wins - daily_expected_losses
+        weekly_projection = daily_projection * 7
+        monthly_projection = daily_projection * 30
+        
+        daily_pct = (daily_projection / TOTAL_BALANCE * 100) if TOTAL_BALANCE > 0 else 0
+        weekly_pct = (weekly_projection / TOTAL_BALANCE * 100) if TOTAL_BALANCE > 0 else 0
+        monthly_pct = (monthly_projection / TOTAL_BALANCE * 100) if TOTAL_BALANCE > 0 else 0
+        
+        # Color based on positive/negative
+        daily_color = "#39ff14" if daily_projection >= 0 else "#ff3333"
+        weekly_color = "#39ff14" if weekly_projection >= 0 else "#ff3333"
+        monthly_color = "#39ff14" if monthly_projection >= 0 else "#ff3333"
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown(f"""
+            <div class="metric-card">
+            <h4 style="color: #ff6600;">📆 DAILY PROJECTION</h4>
+            <p style="color: {daily_color}; font-size: 1.5rem; font-weight: bold;">{daily_projection:+.2f}</p>
+            <p style="color: #aaa; font-size: 0.9rem;">{daily_pct:+.2f}% of balance</p>
+            <hr style="border-color: #333;">
+            <p style="color: #888; font-size: 0.8rem;">Avg {avg_daily_trades:.1f} trades/day<br>× {win_rate*100:.1f}% win rate</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(f"""
+            <div class="metric-card">
+            <h4 style="color: #ff6600;">📅 WEEKLY PROJECTION</h4>
+            <p style="color: {weekly_color}; font-size: 1.5rem; font-weight: bold;">{weekly_projection:+.2f}</p>
+            <p style="color: #aaa; font-size: 0.9rem;">{weekly_pct:+.2f}% ({avg_daily_trades*7:.0f} trades)</p>
+            <hr style="border-color: #333;">
+            <p style="color: #888; font-size: 0.8rem;">Avg win: ${avg_win:.2f}<br>Avg loss: ${avg_loss:.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown(f"""
+            <div class="metric-card">
+            <h4 style="color: #ff6600;">📆 MONTHLY PROJECTION</h4>
+            <p style="color: {monthly_color}; font-size: 1.5rem; font-weight: bold;">{monthly_projection:+.2f}</p>
+            <p style="color: #aaa; font-size: 0.9rem;">{monthly_pct:+.2f}% ({avg_daily_trades*30:.0f} trades)</p>
+            <hr style="border-color: #333;">
+            <p style="color: #888; font-size: 0.8rem;">Sample: {total_trades} trades<br>Confidence: Moderate</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Show the math
+        st.markdown(f"""
+        <div class="terminal-bg" style="margin-top: 15px;">
+        <h4 style="color: #ff6600;">📐 PROJECTION MATH (TRANSPARENCY)</h4>
+        <p style="color: #39ff14; font-family: monospace;">
+        Daily = (trades/day × win_rate × avg_win) - (trades/day × loss_rate × avg_loss)<br>
+        Daily = ({avg_daily_trades:.2f} × {win_rate:.2f} × ${avg_win:.2f}) - ({avg_daily_trades:.2f} × {1-win_rate:.2f} × ${avg_loss:.2f})<br>
+        Daily = ${daily_expected_wins:.2f} - ${daily_expected_losses:.2f} = <strong>${daily_projection:.2f}</strong>
+        </p>
+        <p style="color: #888; font-size: 0.8rem; margin-top: 10px;">
+        ⚠️ Based on {total_trades} historical trades. Past performance ≠ future results.
+        </p>
         </div>
         """, unsafe_allow_html=True)
     
-    with col2:
-        st.markdown("""
-        <div class="metric-card">
-        <h4 style="color: #ff6600;">📅 WEEKLY PROJECTION</h4>
-        <p style="color: #39ff14; font-size: 1.5rem; font-weight: bold;">+$4.15</p>
-        <p style="color: #aaa; font-size: 0.9rem;">+1.19% (2-3 trades)</p>
+    else:
+        # INSUFFICIENT DATA - Less than 10 trades
+        st.markdown(f"""
+        <div class="metric-card" style="border-color: #ff6600;">
+        <h4 style="color: #ff6600;">⚠️ INSUFFICIENT DATA FOR PROJECTIONS</h4>
+        <p style="color: #aaa; font-size: 1.1rem;">
+            Need at least <strong>10 trades</strong> for reliable projections.<br>
+            Current sample: <strong style="color: #ff6600;">{total_trades} trades</strong>
+        </p>
         <hr style="border-color: #333;">
-        <p style="color: #888; font-size: 0.8rem;">Assuming 40% win rate<br>with 1:3 risk/reward ratio</p>
+        <p style="color: #888; font-size: 0.9rem;">
+            📊 <strong>Current Stats (preliminary):</strong><br>
+        </p>
+        """, unsafe_allow_html=True)
+        
+        # Show preliminary stats anyway
+        if total_trades > 0:
+            winning_trades_list = [t for t in trades if t.get('pnl', 0) > 0]
+            losing_trades_list = [t for t in trades if t.get('pnl', 0) <= 0]
+            win_rate = len(winning_trades_list) / total_trades * 100
+            total_pnl = sum(t.get('pnl', 0) for t in trades)
+            avg_pnl = total_pnl / total_trades
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("📈 WIN RATE", f"{win_rate:.1f}%", f"{len(winning_trades_list)}/{total_trades} trades")
+            with col2:
+                pnl_color = "normal" if total_pnl >= 0 else "inverse"
+                st.metric("💰 TOTAL P&L", f"${total_pnl:+.2f}", f"Avg: ${avg_pnl:+.2f}/trade", delta_color=pnl_color)
+            with col3:
+                st.metric("📊 TRADES NEEDED", f"{10 - total_trades} more", "For projections")
+        
+        st.markdown("""
+        <p style="color: #888; font-size: 0.8rem; margin-top: 10px;">
+        🔄 Projections will auto-calculate once 10+ trades are recorded.
+        </p>
         </div>
         """, unsafe_allow_html=True)
     
-    with col3:
+    st.divider()
+    
+    # Row 2.5: TRADE HISTORY TABLE
+    st.subheader("📜 TRADE HISTORY")
+    
+    if total_trades > 0:
+        # Build trade history data for table
+        trade_history = []
+        for t in reversed(trades):  # Most recent first
+            # Parse entry time for date
+            entry_time = t.get('entry_time', '')
+            try:
+                date_str = datetime.fromisoformat(entry_time.replace('Z', '')).strftime('%Y-%m-%d %H:%M')
+            except:
+                date_str = entry_time[:16] if entry_time else 'N/A'
+            
+            # Calculate P&L %
+            pnl = t.get('pnl', 0)
+            entry_price = t.get('entry', 0)
+            exit_price = t.get('exit', 0)
+            
+            # Use provided pnl_pct or calculate it
+            if 'pnl_pct' in t:
+                pnl_pct = t['pnl_pct']
+            elif entry_price > 0:
+                pnl_pct = ((exit_price - entry_price) / entry_price) * 100
+            else:
+                pnl_pct = 0
+            
+            # Format reason
+            reason = t.get('reason', 'N/A').replace('_', ' ').upper()
+            
+            trade_history.append({
+                'Date': date_str,
+                'Symbol': t.get('symbol', 'N/A'),
+                'Entry': f"${entry_price:,.4f}" if entry_price < 1 else f"${entry_price:,.2f}",
+                'Exit': f"${exit_price:,.4f}" if exit_price < 1 else f"${exit_price:,.2f}",
+                'P&L': pnl,
+                'P&L %': pnl_pct,
+                'Reason': reason
+            })
+        
+        trade_df = pd.DataFrame(trade_history)
+        
+        # Style the dataframe
+        def style_pnl(val):
+            if isinstance(val, (int, float)):
+                color = '#39ff14' if val >= 0 else '#ff3333'
+                return f'color: {color}; font-weight: bold;'
+            return ''
+        
+        def format_pnl(val):
+            return f"${val:+.2f}"
+        
+        def format_pnl_pct(val):
+            return f"{val:+.2f}%"
+        
+        # Create styled dataframe
+        styled_df = trade_df.style.applymap(
+            style_pnl, subset=['P&L', 'P&L %']
+        ).format({
+            'P&L': format_pnl,
+            'P&L %': format_pnl_pct
+        })
+        
+        st.dataframe(
+            styled_df,
+            use_container_width=True,
+            hide_index=True,
+            height=min(400, 60 + len(trade_history) * 35)
+        )
+        
+        # Summary row
+        total_pnl_sum = sum(t['P&L'] for t in trade_history)
+        pnl_color = "#39ff14" if total_pnl_sum >= 0 else "#ff3333"
+        st.markdown(f"""
+        <div style="text-align: right; padding: 10px; color: #888;">
+            <strong>Total P&L:</strong> <span style="color: {pnl_color}; font-weight: bold;">${total_pnl_sum:+.2f}</span> 
+            | <strong>Trades Shown:</strong> {len(trade_history)}
+        </div>
+        """, unsafe_allow_html=True)
+    else:
         st.markdown("""
-        <div class="metric-card">
-        <h4 style="color: #ff6600;">📆 MONTHLY PROJECTION</h4>
-        <p style="color: #39ff14; font-size: 1.5rem; font-weight: bold;">+$17.97</p>
-        <p style="color: #aaa; font-size: 0.9rem;">+5.15% (10 trades)</p>
-        <hr style="border-color: #333;">
-        <p style="color: #888; font-size: 0.8rem;">Sharpe ratio: 14.64<br>Max drawdown: 1.62%</p>
+        <div class="metric-card" style="border-color: #ff6600; text-align: center;">
+        <h4 style="color: #ff6600;">📭 NO TRADES YET</h4>
+        <p style="color: #888;">Trade history will appear here once trades are executed.</p>
         </div>
         """, unsafe_allow_html=True)
     
