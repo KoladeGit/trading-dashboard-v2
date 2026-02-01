@@ -1,21 +1,14 @@
 {
-  "last_updated": "2026-02-01T18:08:31.676291",
+  "last_updated": "2026-02-01T18:08:34.199125",
   "account": {
-    "total_usd": 287.5,
+    "total_usd": 287.23,
     "balances": [
       {
         "currency": "USDT",
-        "amount": 262.84782348,
-        "free": 262.84782348,
+        "amount": 276.45209514,
+        "free": 276.45209514,
         "used": 0.0,
-        "usd_value": 262.85
-      },
-      {
-        "currency": "BTC",
-        "amount": 0.0001822,
-        "free": 0.0001822,
-        "used": 0.0,
-        "usd_value": 13.88
+        "usd_value": 276.45
       },
       {
         "currency": "USD",
@@ -64,11 +57,11 @@
   "markets": [
     {
       "symbol": "BTC/USDT",
-      "price": 76167.71,
-      "change_24h": -2.817,
-      "volume_24h": 2941738.8510079,
+      "price": 76035.5,
+      "change_24h": -2.915,
+      "volume_24h": 2941744.6998739,
       "high_24h": 79392.0,
-      "low_24h": 76087.0
+      "low_24h": 76035.5
     },
     {
       "symbol": "ETH/USDT",
@@ -229,28 +222,29 @@
       "reason": "stop_loss",
       "entry_time": "2026-02-01T17:23:02.447194",
       "exit_time": "2026-02-01T18:08:31.443346"
+    },
+    {
+      "symbol": "BTC/USDT",
+      "entry": 77466.66,
+      "exit": 76167.71,
+      "amount": 0.000186381245213102,
+      "pnl": -0.2420999184695583,
+      "pnl_pct": -1.6767858585874194,
+      "reason": "stop_loss",
+      "entry_time": "2026-02-01T17:43:16.140145",
+      "exit_time": "2026-02-01T18:08:33.970012"
     }
   ],
   "performance": {
-    "total_trades": 8,
+    "total_trades": 9,
     "winning_trades": 2,
-    "win_rate": 25.0,
-    "total_pnl": -2.16
+    "win_rate": 22.2,
+    "total_pnl": -2.4
   },
   "trading_state": {
-    "positions": {
-      "BTC/USDT": {
-        "entry": 77466.66,
-        "amount": 0.000186381245213102,
-        "stop": 76715.38142857143,
-        "target": 78593.57785714287,
-        "time": "2026-02-01T17:43:16.140145",
-        "order_id": "1677088321",
-        "reason": "Bullish EMA crossover (score: 0.75)"
-      }
-    },
+    "positions": {},
     "daily_trades": 9,
-    "daily_pnl": -2.1617125389255776,
-    "last_update": "2026-02-01T18:08:31.442486"
+    "daily_pnl": -2.403812457395136,
+    "last_update": "2026-02-01T18:08:33.969250"
   }
 }
