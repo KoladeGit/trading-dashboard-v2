@@ -344,31 +344,45 @@ with tab1:
     # Row 3: Trade Statistics
     st.subheader("📈 TRADE STATISTICS")
     
+    # Calculate real trade stats from bot_data
+    trades = BOT_DATA.get('trades', [])
+    winning_trades = [t for t in trades if t.get('pnl', 0) > 0]
+    losing_trades = [t for t in trades if t.get('pnl', 0) <= 0]
+    
+    total_profit = sum(t.get('pnl', 0) for t in winning_trades)
+    total_loss = abs(sum(t.get('pnl', 0) for t in losing_trades))
+    avg_win = total_profit / len(winning_trades) if winning_trades else 0
+    avg_loss = total_loss / len(losing_trades) if losing_trades else 0
+    largest_win = max((t.get('pnl', 0) for t in winning_trades), default=0)
+    largest_loss = abs(min((t.get('pnl', 0) for t in losing_trades), default=0))
+    
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("""
+        win_note = f"Last: {winning_trades[-1].get('symbol', '?')}" if winning_trades else "📊 No winning trades yet"
+        st.markdown(f"""
         <div class="metric-card" style="border-color: #39ff14;">
         <h4 style="color: #39ff14;">✅ WINNING TRADES</h4>
-        <p style="color: #39ff14; font-size: 2rem; font-weight: bold;">0</p>
+        <p style="color: #39ff14; font-size: 2rem; font-weight: bold;">{len(winning_trades)}</p>
         <hr style="border-color: #333;">
-        <p style="color: #aaa;">Total Profit: $0.00</p>
-        <p style="color: #aaa;">Avg Win: $0.00</p>
-        <p style="color: #aaa;">Largest Win: $0.00</p>
-        <p style="color: #888; font-size: 0.8rem; margin-top: 10px;">📊 No trades executed yet</p>
+        <p style="color: #aaa;">Total Profit: ${total_profit:.2f}</p>
+        <p style="color: #aaa;">Avg Win: ${avg_win:.2f}</p>
+        <p style="color: #aaa;">Largest Win: ${largest_win:.2f}</p>
+        <p style="color: #888; font-size: 0.8rem; margin-top: 10px;">{win_note}</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col2:
-        st.markdown("""
+        loss_note = f"Last: {losing_trades[-1].get('symbol', '?')}" if losing_trades else "📊 No losing trades yet"
+        st.markdown(f"""
         <div class="metric-card" style="border-color: #ff3333;">
         <h4 style="color: #ff3333;">❌ LOSING TRADES</h4>
-        <p style="color: #ff3333; font-size: 2rem; font-weight: bold;">0</p>
+        <p style="color: #ff3333; font-size: 2rem; font-weight: bold;">{len(losing_trades)}</p>
         <hr style="border-color: #333;">
-        <p style="color: #aaa;">Total Loss: $0.00</p>
-        <p style="color: #aaa;">Avg Loss: $0.00</p>
-        <p style="color: #aaa;">Largest Loss: $0.00</p>
-        <p style="color: #888; font-size: 0.8rem; margin-top: 10px;">📊 No trades executed yet</p>
+        <p style="color: #aaa;">Total Loss: ${total_loss:.2f}</p>
+        <p style="color: #aaa;">Avg Loss: ${avg_loss:.2f}</p>
+        <p style="color: #aaa;">Largest Loss: ${largest_loss:.2f}</p>
+        <p style="color: #888; font-size: 0.8rem; margin-top: 10px;">{loss_note}</p>
         </div>
         """, unsafe_allow_html=True)
     
