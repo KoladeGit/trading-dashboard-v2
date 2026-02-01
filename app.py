@@ -345,7 +345,7 @@ with tab1:
     st.subheader("📈 TRADE STATISTICS")
     
     # Calculate real trade stats from bot_data
-    trades = BOT_DATA.get('trades', [])
+    trades = BOT_DATA.get('recent_trades', BOT_DATA.get('trades', []))
     winning_trades = [t for t in trades if t.get('pnl', 0) > 0]
     losing_trades = [t for t in trades if t.get('pnl', 0) <= 0]
     
