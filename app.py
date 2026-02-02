@@ -801,7 +801,104 @@ with tab1:
     
     st.divider()
     
-    # Row 4: Strategy Summary
+    # Row 4: PERFORMANCE METRICS
+    st.subheader("📊 PERFORMANCE METRICS")
+    
+    if total_trades > 0:
+        # Calculate all metrics
+        wins = [t for t in trades if t.get('pnl', 0) > 0]
+        losses = [t for t in trades if t.get('pnl', 0) <= 0]
+        
+        win_rate = len(wins) / total_trades * 100
+        avg_win = sum(t['pnl'] for t in wins) / len(wins) if wins else 0
+        avg_loss = abs(sum(t['pnl'] for t in losses) / len(losses)) if losses else 0
+        
+        gross_profit = sum(t['pnl'] for t in wins)
+        gross_loss = abs(sum(t['pnl'] for t in losses))
+        profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+        
+        best_trade = max(t['pnl'] for t in trades)
+        worst_trade = min(t['pnl'] for t in trades)
+        
+        # Calculate streak (most recent trades)
+        streak = 0
+        streak_type = None
+        for t in reversed(trades):
+            is_win = t.get('pnl', 0) > 0
+            if streak_type is None:
+                streak_type = is_win
+                streak = 1
+            elif is_win == streak_type:
+                streak += 1
+            else:
+                break
+        streak_label = f"{streak}W" if streak_type else f"{streak}L"
+        streak_color = "#39ff14" if streak_type else "#ff3333"
+        
+        # Metric colors
+        wr_color = "#39ff14" if win_rate >= 50 else "#ff6600" if win_rate >= 30 else "#ff3333"
+        pf_color = "#39ff14" if profit_factor >= 1.5 else "#ff6600" if profit_factor >= 1 else "#ff3333"
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown(f"""
+            <div class="metric-card">
+            <h4 style="color: #ff6600;">📈 WIN RATE</h4>
+            <p style="color: {wr_color}; font-size: 2rem; font-weight: bold;">{win_rate:.1f}%</p>
+            <p style="color: #888;">{len(wins)}W / {len(losses)}L</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div class="metric-card">
+            <h4 style="color: #ff6600;">🏆 BEST TRADE</h4>
+            <p style="color: #39ff14; font-size: 1.5rem; font-weight: bold;">${best_trade:+.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(f"""
+            <div class="metric-card">
+            <h4 style="color: #ff6600;">💰 AVG WIN / LOSS</h4>
+            <p style="color: #39ff14; font-size: 1.3rem;">${avg_win:.2f} <span style="color: #888;">win</span></p>
+            <p style="color: #ff3333; font-size: 1.3rem;">${avg_loss:.2f} <span style="color: #888;">loss</span></p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div class="metric-card">
+            <h4 style="color: #ff6600;">💀 WORST TRADE</h4>
+            <p style="color: #ff3333; font-size: 1.5rem; font-weight: bold;">${worst_trade:.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown(f"""
+            <div class="metric-card">
+            <h4 style="color: #ff6600;">⚖️ PROFIT FACTOR</h4>
+            <p style="color: {pf_color}; font-size: 2rem; font-weight: bold;">{profit_factor:.2f}</p>
+            <p style="color: #888;">{total_trades} trades</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div class="metric-card">
+            <h4 style="color: #ff6600;">🔥 STREAK</h4>
+            <p style="color: {streak_color}; font-size: 2rem; font-weight: bold;">{streak_label}</p>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="metric-card" style="border-color: #ff6600; text-align: center;">
+        <h4 style="color: #ff6600;">📭 NO TRADE DATA</h4>
+        <p style="color: #888;">Performance metrics require trade history.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.divider()
+    
+    # Row 5: Strategy Summary
     st.subheader("🔬 BACKTESTING STRATEGY SUMMARY")
     
     st.markdown("""
