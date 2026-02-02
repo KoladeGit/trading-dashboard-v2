@@ -1,14 +1,14 @@
 {
-  "last_updated": "2026-02-01T21:15:39.590571",
+  "last_updated": "2026-02-01T21:50:57.531757",
   "account": {
-    "total_usd": 283.83,
+    "total_usd": 283.62,
     "balances": [
       {
         "currency": "USDT",
-        "amount": 244.82889265,
-        "free": 244.82889265,
+        "amount": 230.72661265,
+        "free": 230.72661265,
         "used": 0.0,
-        "usd_value": 244.83
+        "usd_value": 230.73
       },
       {
         "currency": "ARB",
@@ -18,11 +18,18 @@
         "usd_value": 14.24
       },
       {
+        "currency": "DOT",
+        "amount": 9.05548,
+        "free": 9.05548,
+        "used": 0.0,
+        "usd_value": 14.02
+      },
+      {
         "currency": "ETH",
         "amount": 0.00607507,
         "free": 0.00607507,
         "used": 0.0,
-        "usd_value": 13.95
+        "usd_value": 13.82
       },
       {
         "currency": "USD",
@@ -58,46 +65,39 @@
         "free": 0.0006,
         "used": 0.0,
         "usd_value": 0.0
-      },
-      {
-        "currency": "DOT",
-        "amount": 0.00014,
-        "free": 0.00014,
-        "used": 0.0,
-        "usd_value": 0.0
       }
     ]
   },
   "markets": [
     {
       "symbol": "BTC/USDT",
-      "price": 77198.46,
-      "change_24h": -2.04,
-      "volume_24h": 3569718.5746109,
+      "price": 76859.59,
+      "change_24h": -2.449,
+      "volume_24h": 3617744.3715868,
       "high_24h": 79225.04,
       "low_24h": 75753.24
     },
     {
       "symbol": "ETH/USDT",
-      "price": 2295.73,
-      "change_24h": -6.534,
-      "volume_24h": 5066246.019631,
-      "high_24h": 2462.97,
+      "price": 2275.01,
+      "change_24h": -7.352,
+      "volume_24h": 5134935.477069,
+      "high_24h": 2460.54,
       "low_24h": 2218.82
     },
     {
       "symbol": "SOL/USDT",
-      "price": 102.51,
-      "change_24h": -2.99,
-      "volume_24h": 346412.40205,
+      "price": 100.97,
+      "change_24h": -4.583,
+      "volume_24h": 356847.20996,
       "high_24h": 106.66,
       "low_24h": 98.32
     },
     {
       "symbol": "AVAX/USDT",
-      "price": 10.06,
-      "change_24h": -1.566,
-      "volume_24h": 46473.1417,
+      "price": 9.97,
+      "change_24h": -2.351,
+      "volume_24h": 46401.9271,
       "high_24h": 10.25,
       "low_24h": 9.71
     },
@@ -111,25 +111,25 @@
     },
     {
       "symbol": "LINK/USDT",
-      "price": 9.59,
-      "change_24h": -4.196,
-      "volume_24h": 58261.0275,
+      "price": 9.44,
+      "change_24h": -6.163,
+      "volume_24h": 58218.2635,
       "high_24h": 10.08,
       "low_24h": 9.31
     },
     {
       "symbol": "DOGE/USDT",
-      "price": 0.10534,
-      "change_24h": 0.372,
-      "volume_24h": 572612.21923,
+      "price": 0.10404,
+      "change_24h": -1.431,
+      "volume_24h": 572506.20035,
       "high_24h": 0.10674,
       "low_24h": 0.10134
     },
     {
       "symbol": "ADA/USDT",
-      "price": 0.2891,
-      "change_24h": -1.867,
-      "volume_24h": 43829.26609,
+      "price": 0.2893,
+      "change_24h": -2.691,
+      "volume_24h": 44091.15263,
       "high_24h": 0.2986,
       "low_24h": 0.2796
     },
@@ -143,9 +143,9 @@
     },
     {
       "symbol": "DOT/USDT",
-      "price": 1.506,
-      "change_24h": -3.338,
-      "volume_24h": 2787.376,
+      "price": 1.548,
+      "change_24h": -0.642,
+      "volume_24h": 3178.06326,
       "high_24h": 1.558,
       "low_24h": 1.451
     }
@@ -362,10 +362,19 @@
         "time": "2026-02-01T21:15:39.354981",
         "order_id": "1365617519",
         "reason": "Bullish EMA crossover (score: 0.75)"
+      },
+      "DOT/USDT": {
+        "entry": 1.556,
+        "amount": 9.119135639508354,
+        "stop": 1.5415357142857142,
+        "target": 1.5776964285714286,
+        "time": "2026-02-01T21:50:57.296409",
+        "order_id": "136658169",
+        "reason": "Breakout above 20-period high with volume"
       }
     },
-    "daily_trades": 19,
+    "daily_trades": 20,
     "daily_pnl": -3.471612437437825,
-    "last_update": "2026-02-01T21:15:39.355137"
+    "last_update": "2026-02-01T21:50:57.296545"
   }
 }
