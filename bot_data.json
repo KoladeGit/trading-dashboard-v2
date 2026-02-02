@@ -1,14 +1,14 @@
 {
-  "last_updated": "2026-02-02T00:17:17.592851",
+  "last_updated": "2026-02-02T00:17:20.144762",
   "account": {
-    "total_usd": 280.69,
+    "total_usd": 280.6,
     "balances": [
       {
         "currency": "USDT",
-        "amount": 242.62066595,
-        "free": 242.62066595,
+        "amount": 256.05461829,
+        "free": 256.05461829,
         "used": 0.0,
-        "usd_value": 242.62
+        "usd_value": 256.05
       },
       {
         "currency": "SOL",
@@ -16,13 +16,6 @@
         "free": 0.138326,
         "used": 0.0,
         "usd_value": 13.73
-      },
-      {
-        "currency": "BTC",
-        "amount": 0.00018004,
-        "free": 0.00018004,
-        "used": 0.0,
-        "usd_value": 13.53
       },
       {
         "currency": "USD",
@@ -71,17 +64,17 @@
   "markets": [
     {
       "symbol": "BTC/USDT",
-      "price": 75144.53,
-      "change_24h": -4.629,
-      "volume_24h": 4446068.2539812,
+      "price": 75083.57,
+      "change_24h": -4.707,
+      "volume_24h": 4446081.7690238,
       "high_24h": 79225.04,
       "low_24h": 74619.83
     },
     {
       "symbol": "ETH/USDT",
-      "price": 2203.67,
+      "price": 2203.66,
       "change_24h": -9.742,
-      "volume_24h": 5660700.616836,
+      "volume_24h": 5660810.799836,
       "high_24h": 2448.08,
       "low_24h": 2165.96
     },
@@ -152,16 +145,6 @@
   ],
   "positions": [],
   "recent_trades": [
-    {
-      "symbol": "BTC/USDT",
-      "entry": 78254.92,
-      "exit": 77891.31,
-      "amount": 0.0005631597889003017,
-      "pnl": -0.20477053084203903,
-      "reason": "stop_loss",
-      "entry_time": "2026-02-01T13:15:58.608182",
-      "exit_time": "2026-02-01T13:51:21.090719"
-    },
     {
       "symbol": "ARB/USDT",
       "entry": 0.1398,
@@ -369,13 +352,24 @@
       "reason": "stop_loss",
       "entry_time": "2026-02-01T23:30:14.338931",
       "exit_time": "2026-02-02T00:17:17.358704"
+    },
+    {
+      "symbol": "BTC/USDT",
+      "entry": 76440.59,
+      "exit": 75144.53,
+      "amount": 0.00018435262122257293,
+      "pnl": -0.23893205826172745,
+      "pnl_pct": -1.6955128159005546,
+      "reason": "stop_loss",
+      "entry_time": "2026-02-01T23:36:56.313996",
+      "exit_time": "2026-02-02T00:17:19.913384"
     }
   ],
   "performance": {
-    "total_trades": 21,
+    "total_trades": 22,
     "winning_trades": 4,
-    "win_rate": 19.0,
-    "total_pnl": -5.19
+    "win_rate": 18.2,
+    "total_pnl": -5.43
   },
   "trading_state": {
     "positions": {
@@ -387,19 +381,10 @@
         "time": "2026-02-01T23:26:49.833631",
         "order_id": "783495496",
         "reason": "Bullish EMA crossover (score: 0.75)"
-      },
-      "BTC/USDT": {
-        "entry": 76440.59,
-        "amount": 0.00018435262122257293,
-        "stop": 75423.99357142857,
-        "target": 77965.48464285715,
-        "time": "2026-02-01T23:36:56.313996",
-        "order_id": "1677439739",
-        "reason": "Bullish EMA crossover (score: 0.75)"
       }
     },
     "daily_trades": 23,
-    "daily_pnl": -5.18780114084696,
-    "last_update": "2026-02-02T00:17:17.357814"
+    "daily_pnl": -5.426733199108687,
+    "last_update": "2026-02-02T00:17:19.912480"
   }
 }
