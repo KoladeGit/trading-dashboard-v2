@@ -1,28 +1,35 @@
 {
-  "last_updated": "2026-02-01T19:19:30.817639",
+  "last_updated": "2026-02-01T19:29:37.808158",
   "account": {
-    "total_usd": 285.6,
+    "total_usd": 285.58,
     "balances": [
       {
         "currency": "USDT",
-        "amount": 246.59537272,
-        "free": 246.59537272,
+        "amount": 232.28132272,
+        "free": 232.28132272,
         "used": 0.0,
-        "usd_value": 246.6
+        "usd_value": 232.28
       },
       {
-        "currency": "BTC",
-        "amount": 0.00018112,
-        "free": 0.00018112,
+        "currency": "ARB",
+        "amount": 102.9536,
+        "free": 102.9536,
         "used": 0.0,
-        "usd_value": 14.09
+        "usd_value": 14.24
       },
       {
         "currency": "ETH",
         "amount": 0.00611167,
         "free": 0.00611167,
         "used": 0.0,
-        "usd_value": 14.09
+        "usd_value": 14.13
+      },
+      {
+        "currency": "BTC",
+        "amount": 0.00018112,
+        "free": 0.00018112,
+        "used": 0.0,
+        "usd_value": 14.12
       },
       {
         "currency": "USD",
@@ -60,13 +67,6 @@
         "usd_value": 0.01
       },
       {
-        "currency": "ARB",
-        "amount": 0.0746,
-        "free": 0.0746,
-        "used": 0.0,
-        "usd_value": 0.01
-      },
-      {
         "currency": "ADA",
         "amount": 0.0006,
         "free": 0.0006,
@@ -78,65 +78,65 @@
   "markets": [
     {
       "symbol": "BTC/USDT",
-      "price": 77780.6,
-      "change_24h": -1.618,
-      "volume_24h": 3416606.0458015,
+      "price": 77962.9,
+      "change_24h": -1.405,
+      "volume_24h": 3445233.3375369,
       "high_24h": 79225.04,
       "low_24h": 75753.24
     },
     {
       "symbol": "ETH/USDT",
-      "price": 2305.96,
-      "change_24h": -6.801,
-      "volume_24h": 4787487.429381,
-      "high_24h": 2476.78,
+      "price": 2312.34,
+      "change_24h": -5.87,
+      "volume_24h": 4814111.254504,
+      "high_24h": 2462.97,
       "low_24h": 2218.82
     },
     {
       "symbol": "SOL/USDT",
-      "price": 101.49,
-      "change_24h": -4.309,
-      "volume_24h": 335393.37253,
+      "price": 102.2,
+      "change_24h": -3.639,
+      "volume_24h": 338668.90452,
       "high_24h": 106.66,
       "low_24h": 98.32
     },
     {
       "symbol": "AVAX/USDT",
-      "price": 9.86,
-      "change_24h": -2.473,
-      "volume_24h": 43554.7047,
+      "price": 10.02,
+      "change_24h": -0.89,
+      "volume_24h": 43769.1314,
       "high_24h": 10.25,
       "low_24h": 9.71
     },
     {
       "symbol": "ARB/USDT",
-      "price": 0.1349,
-      "change_24h": -4.732,
-      "volume_24h": 925.46923,
+      "price": 0.1383,
+      "change_24h": -2.331,
+      "volume_24h": 951.39446,
       "high_24h": 0.1436,
       "low_24h": 0.1325
     },
     {
       "symbol": "LINK/USDT",
-      "price": 9.48,
-      "change_24h": -5.484,
-      "volume_24h": 58907.6331,
+      "price": 9.56,
+      "change_24h": -4.591,
+      "volume_24h": 58875.6016,
       "high_24h": 10.08,
       "low_24h": 9.31
     },
     {
       "symbol": "DOGE/USDT",
-      "price": 0.1053,
-      "change_24h": 0.076,
-      "volume_24h": 549842.96014,
+      "price": 0.10569,
+      "change_24h": 0.542,
+      "volume_24h": 551588.59392,
       "high_24h": 0.10674,
       "low_24h": 0.10134
     },
     {
       "symbol": "ADA/USDT",
-      "price": 0.2892,
-      "change_24h": -1.999,
-      "volume_24h": 41127.78034,
+      "price": 0.2908,
+      "change_24h": -1.457,
+      "volume_24h": 41274.47833,
       "high_24h": 0.2986,
       "low_24h": 0.2796
     },
@@ -150,10 +150,10 @@
     },
     {
       "symbol": "DOT/USDT",
-      "price": 1.48,
-      "change_24h": -0.804,
-      "volume_24h": 1919.24059,
-      "high_24h": 1.562,
+      "price": 1.506,
+      "change_24h": -3.462,
+      "volume_24h": 1895.17091,
+      "high_24h": 1.56,
       "low_24h": 1.451
     }
   ],
@@ -325,10 +325,19 @@
         "time": "2026-02-01T19:19:30.585447",
         "order_id": "1365476373",
         "reason": "Bullish EMA crossover (score: 0.75)"
+      },
+      "ARB/USDT": {
+        "entry": 0.1379,
+        "amount": 103.57801509274837,
+        "stop": 0.13656071428571429,
+        "target": 0.13990892857142856,
+        "time": "2026-02-01T19:29:37.575798",
+        "order_id": "121148615",
+        "reason": "Breakout above 20-period high with volume"
       }
     },
-    "daily_trades": 15,
+    "daily_trades": 16,
     "daily_pnl": -2.9137485061200366,
-    "last_update": "2026-02-01T19:19:30.585596"
+    "last_update": "2026-02-01T19:29:37.575953"
   }
 }
