@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-02-01T18:38:58.172858",
+  "last_updated": "2026-02-01T19:00:10.670591",
   "account": {
-    "total_usd": 286.61,
+    "total_usd": 286.51,
     "balances": [
       {
         "currency": "USDT",
@@ -22,7 +22,7 @@
         "amount": 135.694,
         "free": 135.694,
         "used": 0.0,
-        "usd_value": 14.27
+        "usd_value": 14.17
       },
       {
         "currency": "USD",
@@ -64,25 +64,25 @@
   "markets": [
     {
       "symbol": "BTC/USDT",
-      "price": 77463.25,
-      "change_24h": -1.808,
-      "volume_24h": 3278234.1302123,
+      "price": 76934.4,
+      "change_24h": -2.3,
+      "volume_24h": 3351475.3708592,
       "high_24h": 79392.0,
       "low_24h": 75753.24
     },
     {
       "symbol": "ETH/USDT",
-      "price": 2294.65,
-      "change_24h": -6.446,
-      "volume_24h": 4701833.87719,
+      "price": 2271.04,
+      "change_24h": -7.229,
+      "volume_24h": 4727293.092275,
       "high_24h": 2476.78,
       "low_24h": 2218.82
     },
     {
       "symbol": "SOL/USDT",
-      "price": 101.88,
-      "change_24h": -3.431,
-      "volume_24h": 328120.71462,
+      "price": 100.7,
+      "change_24h": -4.649,
+      "volume_24h": 327142.33115,
       "high_24h": 106.66,
       "low_24h": 98.32
     },
@@ -104,25 +104,25 @@
     },
     {
       "symbol": "LINK/USDT",
-      "price": 9.36,
-      "change_24h": -6.4,
-      "volume_24h": 54635.5363,
+      "price": 9.4,
+      "change_24h": -6.0,
+      "volume_24h": 55120.4199,
       "high_24h": 10.08,
       "low_24h": 9.35
     },
     {
       "symbol": "DOGE/USDT",
-      "price": 0.10519,
-      "change_24h": 1.466,
-      "volume_24h": 550171.49035,
+      "price": 0.1044,
+      "change_24h": -0.296,
+      "volume_24h": 549555.97913,
       "high_24h": 0.10674,
       "low_24h": 0.10134
     },
     {
       "symbol": "ADA/USDT",
-      "price": 0.2904,
-      "change_24h": -0.65,
-      "volume_24h": 41155.56682,
+      "price": 0.2858,
+      "change_24h": -2.789,
+      "volume_24h": 40982.55933,
       "high_24h": 0.2986,
       "low_24h": 0.2796
     },
