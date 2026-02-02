@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-02-02T01:58:21.494767",
+  "last_updated": "2026-02-02T02:00:09.318228",
   "account": {
-    "total_usd": 279.51,
+    "total_usd": 279.5,
     "balances": [
       {
         "currency": "USDT",
@@ -29,7 +29,7 @@
         "amount": 0.00620067,
         "free": 0.00620067,
         "used": 0.0,
-        "usd_value": 13.81
+        "usd_value": 13.8
       },
       {
         "currency": "USD",
@@ -78,17 +78,17 @@
   "markets": [
     {
       "symbol": "BTC/USDT",
-      "price": 76446.0,
-      "change_24h": -2.396,
-      "volume_24h": 4625969.2349109,
+      "price": 76434.61,
+      "change_24h": -2.41,
+      "volume_24h": 4626834.4746961,
       "high_24h": 79225.04,
       "low_24h": 74619.83
     },
     {
       "symbol": "ETH/USDT",
-      "price": 2227.08,
-      "change_24h": -7.866,
-      "volume_24h": 6340489.42312,
+      "price": 2225.51,
+      "change_24h": -7.931,
+      "volume_24h": 6341249.657336,
       "high_24h": 2438.46,
       "low_24h": 2159.14
     },
