@@ -1,35 +1,42 @@
 {
-  "last_updated": "2026-02-02T03:00:10.620291",
+  "last_updated": "2026-02-02T03:19:03.759283",
   "account": {
-    "total_usd": 279.64,
+    "total_usd": 279.72,
     "balances": [
       {
         "currency": "USDT",
-        "amount": 212.65476351,
-        "free": 212.65476351,
+        "amount": 198.61116351,
+        "free": 198.61116351,
         "used": 0.0,
-        "usd_value": 212.65
+        "usd_value": 198.61
       },
       {
         "currency": "BTC",
         "amount": 0.00018788,
         "free": 0.00018788,
         "used": 0.0,
-        "usd_value": 14.41
+        "usd_value": 14.46
       },
       {
         "currency": "SOL",
         "amount": 0.138492,
         "free": 0.138492,
         "used": 0.0,
-        "usd_value": 14.07
+        "usd_value": 14.12
+      },
+      {
+        "currency": "AVAX",
+        "amount": 1.40438,
+        "free": 1.40438,
+        "used": 0.0,
+        "usd_value": 13.99
       },
       {
         "currency": "ETH",
         "amount": 0.00620067,
         "free": 0.00620067,
         "used": 0.0,
-        "usd_value": 13.86
+        "usd_value": 13.93
       },
       {
         "currency": "LINK",
@@ -51,13 +58,6 @@
         "free": 0.872,
         "used": 0.0,
         "usd_value": 0.09
-      },
-      {
-        "currency": "AVAX",
-        "amount": 0.00284,
-        "free": 0.00284,
-        "used": 0.0,
-        "usd_value": 0.03
       },
       {
         "currency": "DOT",
@@ -85,34 +85,34 @@
   "markets": [
     {
       "symbol": "BTC/USDT",
-      "price": 76705.11,
-      "change_24h": -2.267,
-      "volume_24h": 4652783.4912355,
+      "price": 76962.09,
+      "change_24h": -1.688,
+      "volume_24h": 4665565.6890287,
       "high_24h": 79225.04,
       "low_24h": 74619.83
     },
     {
       "symbol": "ETH/USDT",
-      "price": 2235.09,
-      "change_24h": -7.312,
-      "volume_24h": 6281996.493141,
+      "price": 2246.92,
+      "change_24h": -6.707,
+      "volume_24h": 6245123.437729,
       "high_24h": 2438.46,
       "low_24h": 2159.14
     },
     {
       "symbol": "SOL/USDT",
-      "price": 101.62,
-      "change_24h": -3.559,
-      "volume_24h": 562963.46493,
+      "price": 101.94,
+      "change_24h": -2.896,
+      "volume_24h": 566079.69693,
       "high_24h": 106.66,
       "low_24h": 96.0
     },
     {
       "symbol": "AVAX/USDT",
-      "price": 9.88,
-      "change_24h": -3.042,
-      "volume_24h": 57410.1368,
-      "high_24h": 10.19,
+      "price": 9.96,
+      "change_24h": -1.678,
+      "volume_24h": 61295.042,
+      "high_24h": 10.13,
       "low_24h": 9.56
     },
     {
@@ -126,24 +126,24 @@
     {
       "symbol": "LINK/USDT",
       "price": 9.39,
-      "change_24h": -5.628,
-      "volume_24h": 538986.0913,
+      "change_24h": -5.152,
+      "volume_24h": 538976.0418,
       "high_24h": 9.95,
       "low_24h": 9.03
     },
     {
       "symbol": "DOGE/USDT",
-      "price": 0.10347,
-      "change_24h": -2.763,
-      "volume_24h": 674955.09992,
+      "price": 0.10409,
+      "change_24h": -2.18,
+      "volume_24h": 678321.99121,
       "high_24h": 0.10674,
       "low_24h": 0.09961
     },
     {
       "symbol": "ADA/USDT",
       "price": 0.2855,
-      "change_24h": -3.872,
-      "volume_24h": 136278.50886,
+      "change_24h": -3.417,
+      "volume_24h": 136071.9999,
       "high_24h": 0.2982,
       "low_24h": 0.276
     },
@@ -430,10 +430,19 @@
         "time": "2026-02-02T02:13:30.498992",
         "order_id": "212321354",
         "reason": "Bullish EMA crossover (score: 0.75)"
+      },
+      "AVAX/USDT": {
+        "entry": 9.92,
+        "amount": 1.4103275655524197,
+        "stop": 9.891428571428571,
+        "target": 9.962857142857143,
+        "time": "2026-02-02T03:19:03.527428",
+        "order_id": "294403903",
+        "reason": "Breakout above 20-period high with volume"
       }
     },
-    "daily_trades": 29,
+    "daily_trades": 30,
     "daily_pnl": -6.217022198424944,
-    "last_update": "2026-02-02T02:13:30.499146"
+    "last_update": "2026-02-02T03:19:03.527580"
   }
 }
