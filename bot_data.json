@@ -1,19 +1,26 @@
 {
-  "last_updated": "2026-02-01T19:19:27.570703",
+  "last_updated": "2026-02-01T19:19:30.817639",
   "account": {
-    "total_usd": 285.57,
+    "total_usd": 285.6,
     "balances": [
       {
         "currency": "USDT",
-        "amount": 260.66172872,
-        "free": 260.66172872,
+        "amount": 246.59537272,
+        "free": 246.59537272,
         "used": 0.0,
-        "usd_value": 260.66
+        "usd_value": 246.6
       },
       {
         "currency": "BTC",
         "amount": 0.00018112,
         "free": 0.00018112,
+        "used": 0.0,
+        "usd_value": 14.09
+      },
+      {
+        "currency": "ETH",
+        "amount": 0.00611167,
+        "free": 0.00611167,
         "used": 0.0,
         "usd_value": 14.09
       },
@@ -79,9 +86,9 @@
     },
     {
       "symbol": "ETH/USDT",
-      "price": 2305.51,
-      "change_24h": -6.837,
-      "volume_24h": 4789404.336355,
+      "price": 2305.96,
+      "change_24h": -6.801,
+      "volume_24h": 4787487.429381,
       "high_24h": 2476.78,
       "low_24h": 2218.82
     },
@@ -309,10 +316,19 @@
         "time": "2026-02-01T19:09:21.196594",
         "order_id": "1677146988",
         "reason": "Bullish EMA crossover (score: 0.75)"
+      },
+      "ETH/USDT": {
+        "entry": 2304.22,
+        "amount": 0.006199049344277021,
+        "stop": 2244.968214285714,
+        "target": 2393.097678571429,
+        "time": "2026-02-01T19:19:30.585447",
+        "order_id": "1365476373",
+        "reason": "Bullish EMA crossover (score: 0.75)"
       }
     },
-    "daily_trades": 14,
+    "daily_trades": 15,
     "daily_pnl": -2.9137485061200366,
-    "last_update": "2026-02-01T19:19:27.339373"
+    "last_update": "2026-02-01T19:19:30.585596"
   }
 }
