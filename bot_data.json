@@ -1,14 +1,21 @@
 {
-  "last_updated": "2026-02-02T01:38:07.398681",
+  "last_updated": "2026-02-02T01:43:12.624531",
   "account": {
-    "total_usd": 278.97,
+    "total_usd": 279.58,
     "balances": [
       {
         "currency": "USDT",
-        "amount": 268.11500031,
-        "free": 268.11500031,
+        "amount": 254.32518951,
+        "free": 254.32518951,
         "used": 0.0,
-        "usd_value": 268.12
+        "usd_value": 254.33
+      },
+      {
+        "currency": "BTC",
+        "amount": 0.00018788,
+        "free": 0.00018788,
+        "used": 0.0,
+        "usd_value": 14.39
       },
       {
         "currency": "USD",
@@ -64,65 +71,65 @@
   "markets": [
     {
       "symbol": "BTC/USDT",
-      "price": 75004.51,
-      "change_24h": -4.453,
-      "volume_24h": 4548483.1490786,
+      "price": 76610.06,
+      "change_24h": -2.344,
+      "volume_24h": 4608448.4415921,
       "high_24h": 79225.04,
       "low_24h": 74619.83
     },
     {
       "symbol": "ETH/USDT",
-      "price": 2168.18,
-      "change_24h": -10.142,
-      "volume_24h": 6148784.261372,
+      "price": 2231.76,
+      "change_24h": -7.79,
+      "volume_24h": 6248326.03835,
       "high_24h": 2438.46,
       "low_24h": 2159.14
     },
     {
       "symbol": "SOL/USDT",
-      "price": 97.93,
-      "change_24h": -6.511,
-      "volume_24h": 513512.76335,
+      "price": 100.92,
+      "change_24h": -3.822,
+      "volume_24h": 522935.561,
       "high_24h": 106.66,
       "low_24h": 96.0
     },
     {
       "symbol": "AVAX/USDT",
-      "price": 9.57,
-      "change_24h": -6.084,
-      "volume_24h": 53032.6871,
+      "price": 9.88,
+      "change_24h": -3.042,
+      "volume_24h": 55768.098,
       "high_24h": 10.19,
       "low_24h": 9.56
     },
     {
       "symbol": "ARB/USDT",
-      "price": 0.1306,
-      "change_24h": -9.053,
-      "volume_24h": 935.61218,
+      "price": 0.1335,
+      "change_24h": -7.033,
+      "volume_24h": 1099.5784,
       "high_24h": 0.1436,
       "low_24h": 0.1305
     },
     {
       "symbol": "LINK/USDT",
-      "price": 9.08,
-      "change_24h": -8.652,
-      "volume_24h": 508848.9456,
+      "price": 9.42,
+      "change_24h": -5.231,
+      "volume_24h": 515834.6313,
       "high_24h": 9.95,
       "low_24h": 9.03
     },
     {
       "symbol": "DOGE/USDT",
-      "price": 0.09965,
-      "change_24h": -4.832,
-      "volume_24h": 678666.36034,
+      "price": 0.1036,
+      "change_24h": -0.984,
+      "volume_24h": 685602.65316,
       "high_24h": 0.10674,
       "low_24h": 0.09961
     },
     {
       "symbol": "ADA/USDT",
-      "price": 0.276,
-      "change_24h": -6.186,
-      "volume_24h": 134643.13202,
+      "price": 0.2869,
+      "change_24h": -2.481,
+      "volume_24h": 136644.53129,
       "high_24h": 0.2986,
       "low_24h": 0.276
     },
@@ -136,9 +143,9 @@
     },
     {
       "symbol": "DOT/USDT",
-      "price": 1.484,
-      "change_24h": -3.196,
-      "volume_24h": 3635.3494,
+      "price": 1.476,
+      "change_24h": -3.718,
+      "volume_24h": 3735.61408,
       "high_24h": 1.556,
       "low_24h": 1.451
     }
@@ -373,9 +380,19 @@
     "total_pnl": -6.22
   },
   "trading_state": {
-    "positions": {},
-    "daily_trades": 25,
+    "positions": {
+      "BTC/USDT": {
+        "entry": 76508.92,
+        "amount": 0.00018282000222562283,
+        "stop": 75543.98964285714,
+        "target": 77956.31553571428,
+        "time": "2026-02-02T01:43:12.389110",
+        "order_id": "1677573630",
+        "reason": "Breakout above 20-period high with volume"
+      }
+    },
+    "daily_trades": 26,
     "daily_pnl": -6.217022198424944,
-    "last_update": "2026-02-02T01:38:07.168729"
+    "last_update": "2026-02-02T01:43:12.389313"
   }
 }
