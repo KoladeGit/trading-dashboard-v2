@@ -1,21 +1,14 @@
 {
-  "last_updated": "2026-02-02T00:17:20.144762",
+  "last_updated": "2026-02-02T00:17:23.032980",
   "account": {
-    "total_usd": 280.6,
+    "total_usd": 280.48,
     "balances": [
       {
         "currency": "USDT",
-        "amount": 256.05461829,
-        "free": 256.05461829,
+        "amount": 269.63601801,
+        "free": 269.63601801,
         "used": 0.0,
-        "usd_value": 256.05
-      },
-      {
-        "currency": "SOL",
-        "amount": 0.138326,
-        "free": 0.138326,
-        "used": 0.0,
-        "usd_value": 13.73
+        "usd_value": 269.64
       },
       {
         "currency": "USD",
@@ -30,6 +23,13 @@
         "free": 0.694,
         "used": 0.0,
         "usd_value": 0.07
+      },
+      {
+        "currency": "SOL",
+        "amount": 0.000326,
+        "free": 0.000326,
+        "used": 0.0,
+        "usd_value": 0.03
       },
       {
         "currency": "AVAX",
@@ -80,9 +80,9 @@
     },
     {
       "symbol": "SOL/USDT",
-      "price": 99.29,
-      "change_24h": -5.465,
-      "volume_24h": 488115.80146,
+      "price": 99.01,
+      "change_24h": -5.732,
+      "volume_24h": 488129.46484,
       "high_24h": 106.66,
       "low_24h": 96.0
     },
@@ -145,16 +145,6 @@
   ],
   "positions": [],
   "recent_trades": [
-    {
-      "symbol": "ARB/USDT",
-      "entry": 0.1398,
-      "exit": 0.1367,
-      "amount": 315.0580562495707,
-      "pnl": -0.9766799743736754,
-      "reason": "stop_loss",
-      "entry_time": "2026-02-01T13:21:08.568177",
-      "exit_time": "2026-02-01T14:56:48.974176"
-    },
     {
       "symbol": "DOGE/USDT",
       "entry": 0.105,
@@ -363,28 +353,29 @@
       "reason": "stop_loss",
       "entry_time": "2026-02-01T23:36:56.313996",
       "exit_time": "2026-02-02T00:17:19.913384"
+    },
+    {
+      "symbol": "SOL/USDT",
+      "entry": 101.24,
+      "exit": 99.29,
+      "amount": 0.139263704535806,
+      "pnl": -0.2715642238448201,
+      "pnl_pct": -1.9261161596206924,
+      "reason": "bearish_signal",
+      "entry_time": "2026-02-01T23:26:49.833631",
+      "exit_time": "2026-02-02T00:17:22.801435"
     }
   ],
   "performance": {
-    "total_trades": 22,
+    "total_trades": 23,
     "winning_trades": 4,
-    "win_rate": 18.2,
-    "total_pnl": -5.43
+    "win_rate": 17.4,
+    "total_pnl": -5.7
   },
   "trading_state": {
-    "positions": {
-      "SOL/USDT": {
-        "entry": 101.24,
-        "amount": 0.139263704535806,
-        "stop": 98.73642857142858,
-        "target": 104.99535714285713,
-        "time": "2026-02-01T23:26:49.833631",
-        "order_id": "783495496",
-        "reason": "Bullish EMA crossover (score: 0.75)"
-      }
-    },
+    "positions": {},
     "daily_trades": 23,
-    "daily_pnl": -5.426733199108687,
-    "last_update": "2026-02-02T00:17:19.912480"
+    "daily_pnl": -5.698297422953507,
+    "last_update": "2026-02-02T00:17:22.800596"
   }
 }
