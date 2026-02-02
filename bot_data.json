@@ -1,14 +1,14 @@
 {
-  "last_updated": "2026-02-02T04:49:50.722324",
+  "last_updated": "2026-02-02T04:49:53.391677",
   "account": {
-    "total_usd": 280.63,
+    "total_usd": 280.56,
     "balances": [
       {
         "currency": "USDT",
-        "amount": 226.75610652,
-        "free": 226.75610652,
+        "amount": 240.81265812,
+        "free": 240.81265812,
         "used": 0.0,
-        "usd_value": 226.76
+        "usd_value": 240.81
       },
       {
         "currency": "BTC",
@@ -23,13 +23,6 @@
         "free": 0.138492,
         "used": 0.0,
         "usd_value": 14.27
-      },
-      {
-        "currency": "LINK",
-        "amount": 1.47112,
-        "free": 1.47112,
-        "used": 0.0,
-        "usd_value": 14.14
       },
       {
         "currency": "USD",
@@ -51,6 +44,13 @@
         "free": 0.00438,
         "used": 0.0,
         "usd_value": 0.04
+      },
+      {
+        "currency": "LINK",
+        "amount": 0.00112,
+        "free": 0.00112,
+        "used": 0.0,
+        "usd_value": 0.01
       },
       {
         "currency": "DOT",
@@ -118,9 +118,9 @@
     },
     {
       "symbol": "LINK/USDT",
-      "price": 9.61,
-      "change_24h": -3.417,
-      "volume_24h": 539541.142,
+      "price": 9.62,
+      "change_24h": -3.317,
+      "volume_24h": 539555.2834,
       "high_24h": 9.95,
       "low_24h": 9.03
     },
@@ -159,17 +159,6 @@
   ],
   "positions": [],
   "recent_trades": [
-    {
-      "symbol": "ETH/USDT",
-      "entry": 2314.38,
-      "exit": 2243.47,
-      "amount": 0.006241275640676983,
-      "pnl": -0.44256885568040677,
-      "pnl_pct": -3.063887520631889,
-      "reason": "stop_loss",
-      "entry_time": "2026-02-01T17:23:02.447194",
-      "exit_time": "2026-02-01T18:08:31.443346"
-    },
     {
       "symbol": "BTC/USDT",
       "entry": 77466.66,
@@ -378,13 +367,24 @@
       "reason": "take_profit",
       "entry_time": "2026-02-02T01:58:21.261375",
       "exit_time": "2026-02-02T04:49:50.492434"
+    },
+    {
+      "symbol": "LINK/USDT",
+      "entry": 9.39,
+      "exit": 9.61,
+      "amount": 1.4889724678498402,
+      "pnl": 0.3275739429269631,
+      "pnl_pct": 2.342917997870062,
+      "reason": "take_profit",
+      "entry_time": "2026-02-02T02:13:30.498992",
+      "exit_time": "2026-02-02T04:49:53.159958"
     }
   ],
   "performance": {
-    "total_trades": 27,
-    "winning_trades": 6,
-    "win_rate": 22.2,
-    "total_pnl": -5.56
+    "total_trades": 28,
+    "winning_trades": 7,
+    "win_rate": 25.0,
+    "total_pnl": -5.23
   },
   "trading_state": {
     "positions": {
@@ -405,19 +405,10 @@
         "time": "2026-02-02T01:45:18.733664",
         "order_id": "783650180",
         "reason": "Bullish EMA crossover (score: 0.75)"
-      },
-      "LINK/USDT": {
-        "entry": 9.39,
-        "amount": 1.4889724678498402,
-        "stop": 9.266785714285716,
-        "target": 9.574821428571429,
-        "time": "2026-02-02T02:13:30.498992",
-        "order_id": "212321354",
-        "reason": "Bullish EMA crossover (score: 0.75)"
       }
     },
     "daily_trades": 30,
-    "daily_pnl": -5.556542472047375,
-    "last_update": "2026-02-02T04:49:50.491456"
+    "daily_pnl": -5.2289685291204115,
+    "last_update": "2026-02-02T04:49:53.159002"
   }
 }
