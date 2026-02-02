@@ -1,14 +1,14 @@
 {
-  "last_updated": "2026-02-01T19:09:18.338628",
+  "last_updated": "2026-02-01T19:09:21.430315",
   "account": {
-    "total_usd": 285.62,
+    "total_usd": 285.71,
     "balances": [
       {
         "currency": "USDT",
-        "amount": 260.4835816,
-        "free": 260.4835816,
+        "amount": 246.5553976,
+        "free": 246.5553976,
         "used": 0.0,
-        "usd_value": 260.48
+        "usd_value": 246.56
       },
       {
         "currency": "ARB",
@@ -16,6 +16,13 @@
         "free": 105.2746,
         "used": 0.0,
         "usd_value": 14.33
+      },
+      {
+        "currency": "BTC",
+        "amount": 0.00018112,
+        "free": 0.00018112,
+        "used": 0.0,
+        "usd_value": 14.01
       },
       {
         "currency": "USD",
@@ -64,9 +71,9 @@
   "markets": [
     {
       "symbol": "BTC/USDT",
-      "price": 77381.34,
-      "change_24h": -2.106,
-      "volume_24h": 3391202.5173435,
+      "price": 77378.8,
+      "change_24h": -2.109,
+      "volume_24h": 3391216.4455275,
       "high_24h": 79392.0,
       "low_24h": 75753.24
     },
@@ -291,10 +298,19 @@
         "time": "2026-02-01T18:28:50.981662",
         "order_id": "121148360",
         "reason": "Breakout above 20-period high with volume"
+      },
+      "BTC/USDT": {
+        "entry": 77381.34,
+        "amount": 0.00018473454690555886,
+        "stop": 76101.00249999999,
+        "target": 79301.84625,
+        "time": "2026-02-01T19:09:21.196594",
+        "order_id": "1677146988",
+        "reason": "Bullish EMA crossover (score: 0.75)"
       }
     },
-    "daily_trades": 13,
+    "daily_trades": 14,
     "daily_pnl": -3.1361958819158438,
-    "last_update": "2026-02-01T19:09:18.103910"
+    "last_update": "2026-02-01T19:09:21.196731"
   }
 }
