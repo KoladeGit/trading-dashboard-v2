@@ -7,6 +7,7 @@ Public dashboard - view only, no trade execution
 
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
@@ -33,6 +34,188 @@ def load_bot_data():
         }
 
 BOT_DATA = load_bot_data()
+
+# ============================================
+# PERFORMANCE METRICS CALCULATION FUNCTIONS
+# ============================================
+def calculate_performance_metrics(trades, starting_balance, current_balance, period_days=None):
+    """
+    Calculate comprehensive performance metrics from trade history.
+    
+    Args:
+        trades: List of trade dictionaries with pnl, entry_time, exit_time
+        starting_balance: Initial account balance
+        current_balance: Current account balance
+        period_days: Filter trades within this many days (None for all time)
+    
+    Returns:
+        Dictionary of performance metrics
+    """
+    if not trades:
+        return None
+    
+    # Filter trades by time period if specified
+    if period_days:
+        cutoff_date = datetime.now() - timedelta(days=period_days)
+        filtered_trades = []
+        for t in trades:
+            try:
+                exit_time = datetime.fromisoformat(t.get('exit_time', '').replace('Z', ''))
+                if exit_time >= cutoff_date:
+                    filtered_trades.append(t)
+            except:
+                continue
+        trades = filtered_trades
+    
+    if not trades:
+        return None
+    
+    # Basic counts
+    total_trades = len(trades)
+    winning_trades = [t for t in trades if t.get('pnl', 0) > 0]
+    losing_trades = [t for t in trades if t.get('pnl', 0) <= 0]
+    
+    win_count = len(winning_trades)
+    loss_count = len(losing_trades)
+    
+    # Win rate
+    win_rate = (win_count / total_trades * 100) if total_trades > 0 else 0
+    loss_rate = 100 - win_rate
+    
+    # P&L calculations
+    gross_profit = sum(t.get('pnl', 0) for t in winning_trades)
+    gross_loss = abs(sum(t.get('pnl', 0) for t in losing_trades))
+    net_pnl = gross_profit - gross_loss
+    
+    # Average win/loss
+    avg_win = gross_profit / win_count if win_count > 0 else 0
+    avg_loss = gross_loss / loss_count if loss_count > 0 else 0
+    
+    # Profit Factor
+    profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+    
+    # Risk/Reward Ratio
+    risk_reward_ratio = avg_win / avg_loss if avg_loss > 0 else float('inf')
+    
+    # Expectancy: (Win% × Avg Win) - (Loss% × Avg Loss)
+    expectancy = (win_rate/100 * avg_win) - (loss_rate/100 * avg_loss)
+    
+    # Max Drawdown calculation
+    # Build equity curve from trades
+    equity_curve = [starting_balance]
+    running_balance = starting_balance
+    
+    # Sort trades by exit time
+    sorted_trades = sorted(trades, key=lambda x: x.get('exit_time', ''))
+    for t in sorted_trades:
+        running_balance += t.get('pnl', 0)
+        equity_curve.append(running_balance)
+    
+    # Calculate max drawdown
+    peak = equity_curve[0]
+    max_drawdown = 0
+    max_drawdown_pct = 0
+    
+    for balance in equity_curve:
+        if balance > peak:
+            peak = balance
+        drawdown = peak - balance
+        drawdown_pct = (drawdown / peak * 100) if peak > 0 else 0
+        if drawdown_pct > max_drawdown_pct:
+            max_drawdown = drawdown
+            max_drawdown_pct = drawdown_pct
+    
+    # Sharpe Ratio calculation (simplified)
+    # Using daily returns assumption for trading period
+    if len(trades) >= 2:
+        returns = [t.get('pnl', 0) for t in trades]
+        avg_return = sum(returns) / len(returns)
+        
+        # Standard deviation
+        variance = sum((r - avg_return) ** 2 for r in returns) / len(returns)
+        std_dev = variance ** 0.5
+        
+        # Risk-free rate (assume 0 for crypto short-term)
+        risk_free_rate = 0
+        
+        # Sharpe = (Return - Risk-free) / Std Dev
+        # Adjust for trade frequency - annualize roughly
+        sharpe_ratio = ((avg_return - risk_free_rate) / std_dev * (252 ** 0.5)) if std_dev > 0 else 0
+    else:
+        sharpe_ratio = 0
+        std_dev = 0
+    
+    # Additional stats
+    best_trade = max(t.get('pnl', 0) for t in trades)
+    worst_trade = min(t.get('pnl', 0) for t in trades)
+    
+    # Calculate streaks
+    current_streak = 0
+    current_streak_type = None
+    max_win_streak = 0
+    max_loss_streak = 0
+    
+    for t in sorted_trades:
+        is_win = t.get('pnl', 0) > 0
+        if current_streak_type is None:
+            current_streak_type = is_win
+            current_streak = 1
+        elif is_win == current_streak_type:
+            current_streak += 1
+        else:
+            if current_streak_type:
+                max_win_streak = max(max_win_streak, current_streak)
+            else:
+                max_loss_streak = max(max_loss_streak, current_streak)
+            current_streak_type = is_win
+            current_streak = 1
+    
+    # Final streak check
+    if current_streak_type:
+        max_win_streak = max(max_win_streak, current_streak)
+    else:
+        max_loss_streak = max(max_loss_streak, current_streak)
+    
+    # Current streak (from most recent)
+    recent_streak = 0
+    recent_streak_type = None
+    for t in reversed(sorted_trades):
+        is_win = t.get('pnl', 0) > 0
+        if recent_streak_type is None:
+            recent_streak_type = is_win
+            recent_streak = 1
+        elif is_win == recent_streak_type:
+            recent_streak += 1
+        else:
+            break
+    
+    # Return all metrics
+    return {
+        'total_trades': total_trades,
+        'win_count': win_count,
+        'loss_count': loss_count,
+        'win_rate': win_rate,
+        'loss_rate': loss_rate,
+        'gross_profit': gross_profit,
+        'gross_loss': gross_loss,
+        'net_pnl': net_pnl,
+        'avg_win': avg_win,
+        'avg_loss': avg_loss,
+        'profit_factor': profit_factor,
+        'risk_reward_ratio': risk_reward_ratio,
+        'expectancy': expectancy,
+        'max_drawdown': max_drawdown,
+        'max_drawdown_pct': max_drawdown_pct,
+        'sharpe_ratio': sharpe_ratio,
+        'best_trade': best_trade,
+        'worst_trade': worst_trade,
+        'max_win_streak': max_win_streak,
+        'max_loss_streak': max_loss_streak,
+        'current_streak': recent_streak,
+        'current_streak_type': recent_streak_type,
+        'std_dev': std_dev,
+        'equity_curve': equity_curve
+    }
 TOTAL_BALANCE = BOT_DATA.get('account', {}).get('total_usd', 349)
 STARTING_BALANCE = BOT_DATA.get('trading_state', {}).get('starting_balance', 376.26)
 CURRENT_PNL = TOTAL_BALANCE - STARTING_BALANCE
@@ -256,7 +439,7 @@ st.markdown('<p class="main-header">🚀 MISSION CONTROL TRADING DASHBOARD</p>',
 st.markdown(f'<p class="mission-subtitle">$1K CRYPTO MISSION • LAST UPDATED: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} EST</p>', unsafe_allow_html=True)
 
 # Create tabs
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎯 MISSION CONTROL", "📊 POLYMARKET", "📰 NEWS TRADING", "🔬 BACKTESTING", "📜 TRADE HISTORY"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🎯 MISSION CONTROL", "📊 POLYMARKET", "📰 NEWS TRADING", "🔬 BACKTESTING", "📊 PERFORMANCE", "📜 TRADE HISTORY"])
 
 # ============================================
 # TAB 1: MISSION CONTROL (Home)
@@ -1037,9 +1220,410 @@ with tab3:
     """, unsafe_allow_html=True)
 
 # ============================================
-# TAB 5: TRADE HISTORY
+# TAB 5: PERFORMANCE METRICS
 # ============================================
 with tab5:
+    st.subheader("📊 PERFORMANCE ANALYTICS • MISSION METRICS CENTER")
+    
+    # Time Period Selector
+    st.markdown("### ⏱️ TIME PERIOD")
+    
+    period_col1, period_col2, period_col3, period_col4, period_col5 = st.columns(5)
+    
+    with period_col1:
+        all_time_btn = st.button("🌌 ALL TIME", use_container_width=True, 
+                                  type="primary" if st.session_state.get('perf_period') == 'all' else "secondary")
+    with period_col2:
+        days30_btn = st.button("📅 30 DAYS", use_container_width=True,
+                               type="primary" if st.session_state.get('perf_period') == '30d' else "secondary")
+    with period_col3:
+        days7_btn = st.button("📆 7 DAYS", use_container_width=True,
+                              type="primary" if st.session_state.get('perf_period') == '7d' else "secondary")
+    with period_col4:
+        days1_btn = st.button("⏰ 24 HOURS", use_container_width=True,
+                              type="primary" if st.session_state.get('perf_period') == '1d' else "secondary")
+    with period_col5:
+        custom_btn = st.button("⚙️ CUSTOM", use_container_width=True,
+                               type="primary" if st.session_state.get('perf_period') == 'custom' else "secondary")
+    
+    # Set default period
+    if 'perf_period' not in st.session_state:
+        st.session_state.perf_period = 'all'
+    
+    # Handle button clicks
+    if all_time_btn:
+        st.session_state.perf_period = 'all'
+    elif days30_btn:
+        st.session_state.perf_period = '30d'
+    elif days7_btn:
+        st.session_state.perf_period = '7d'
+    elif days1_btn:
+        st.session_state.perf_period = '1d'
+    elif custom_btn:
+        st.session_state.perf_period = 'custom'
+    
+    # Determine period days
+    period_days = None
+    period_label = "ALL TIME"
+    if st.session_state.perf_period == '30d':
+        period_days = 30
+        period_label = "LAST 30 DAYS"
+    elif st.session_state.perf_period == '7d':
+        period_days = 7
+        period_label = "LAST 7 DAYS"
+    elif st.session_state.perf_period == '1d':
+        period_days = 1
+        period_label = "LAST 24 HOURS"
+    
+    # Get trades and calculate metrics
+    all_trades = BOT_DATA.get('recent_trades', [])
+    starting_balance = BOT_DATA.get('trading_state', {}).get('starting_balance', 376.26)
+    current_balance = BOT_DATA.get('account', {}).get('total_usd', starting_balance)
+    
+    metrics = calculate_performance_metrics(all_trades, starting_balance, current_balance, period_days)
+    
+    # Display period header
+    st.markdown(f"""
+    <div style="text-align: center; margin: 20px 0;">
+        <span style="color: #ff6600; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px;">
+            📊 {period_label} PERFORMANCE
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if metrics and metrics['total_trades'] > 0:
+        # ============================================
+        # KEY METRICS CARDS - ROW 1
+        # ============================================
+        st.markdown("### 🎯 KEY PERFORMANCE METRICS")
+        
+        kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
+        
+        with kpi_col1:
+            # Win Rate with progress bar
+            win_rate_color = "#39ff14" if metrics['win_rate'] >= 50 else "#ff6600" if metrics['win_rate'] >= 30 else "#ff3333"
+            win_rate_arrow = "▲" if metrics['win_rate'] >= 50 else "▼"
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: {win_rate_color};">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Win Rate</span>
+                    <span style="color: {win_rate_color}; font-size: 1.2rem;">{win_rate_arrow}</span>
+                </div>
+                <p style="color: {win_rate_color}; font-size: 2.2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px {win_rate_color};">
+                    {metrics['win_rate']:.1f}%
+                </p>
+                <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 4px; height: 8px; overflow: hidden;">
+                    <div style="background: linear-gradient(90deg, {win_rate_color}, #2dd60f); width: {min(metrics['win_rate'], 100)}%; height: 100%;"></div>
+                </div>
+                <p style="color: #888; font-size: 0.75rem; margin-top: 5px;">{metrics['win_count']}W / {metrics['loss_count']}L</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with kpi_col2:
+            # Profit Factor
+            pf_color = "#39ff14" if metrics['profit_factor'] >= 1.5 else "#ff6600" if metrics['profit_factor'] >= 1 else "#ff3333"
+            pf_arrow = "▲" if metrics['profit_factor'] >= 1.5 else "▼"
+            pf_display = f"{metrics['profit_factor']:.2f}" if metrics['profit_factor'] != float('inf') else "∞"
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: {pf_color};">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Profit Factor</span>
+                    <span style="color: {pf_color}; font-size: 1.2rem;">{pf_arrow}</span>
+                </div>
+                <p style="color: {pf_color}; font-size: 2.2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px {pf_color};">
+                    {pf_display}
+                </p>
+                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">
+                    ${metrics['gross_profit']:.2f} / ${metrics['gross_loss']:.2f}
+                </p>
+                <p style="color: #555; font-size: 0.7rem;">Gross Profit / Loss</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with kpi_col3:
+            # Sharpe Ratio
+            sharpe_color = "#39ff14" if metrics['sharpe_ratio'] >= 2 else "#ff6600" if metrics['sharpe_ratio'] >= 1 else "#ff3333"
+            sharpe_arrow = "▲" if metrics['sharpe_ratio'] >= 2 else "▼"
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: {sharpe_color};">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Sharpe Ratio</span>
+                    <span style="color: {sharpe_color}; font-size: 1.2rem;">{sharpe_arrow}</span>
+                </div>
+                <p style="color: {sharpe_color}; font-size: 2.2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px {sharpe_color};">
+                    {metrics['sharpe_ratio']:.2f}
+                </p>
+                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">Risk-Adjusted Return</p>
+                <p style="color: #555; font-size: 0.7rem;">σ = {metrics['std_dev']:.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with kpi_col4:
+            # Max Drawdown
+            dd_color = "#ff3333" if metrics['max_drawdown_pct'] >= 10 else "#ff6600" if metrics['max_drawdown_pct'] >= 5 else "#39ff14"
+            dd_arrow = "▼"
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: {dd_color};">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Max Drawdown</span>
+                    <span style="color: {dd_color}; font-size: 1.2rem;">{dd_arrow}</span>
+                </div>
+                <p style="color: {dd_color}; font-size: 2.2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px {dd_color};">
+                    {metrics['max_drawdown_pct']:.2f}%
+                </p>
+                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">${metrics['max_drawdown']:.2f}</p>
+                <p style="color: #555; font-size: 0.7rem;">Peak to Trough</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # ============================================
+        # KEY METRICS CARDS - ROW 2
+        # ============================================
+        kpi2_col1, kpi2_col2, kpi2_col3, kpi2_col4 = st.columns(4)
+        
+        with kpi2_col1:
+            # Average Win
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: #39ff14;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Average Win</span>
+                    <span style="color: #39ff14; font-size: 1.2rem;">▲</span>
+                </div>
+                <p style="color: #39ff14; font-size: 2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px #39ff14;">
+                    ${metrics['avg_win']:.2f}
+                </p>
+                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">{metrics['win_count']} winning trades</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with kpi2_col2:
+            # Average Loss
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: #ff3333;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Average Loss</span>
+                    <span style="color: #ff3333; font-size: 1.2rem;">▼</span>
+                </div>
+                <p style="color: #ff3333; font-size: 2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px #ff3333;">
+                    ${metrics['avg_loss']:.2f}
+                </p>
+                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">{metrics['loss_count']} losing trades</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with kpi2_col3:
+            # Risk/Reward Ratio
+            rr_color = "#39ff14" if metrics['risk_reward_ratio'] >= 2 else "#ff6600" if metrics['risk_reward_ratio'] >= 1 else "#ff3333"
+            rr_display = f"{metrics['risk_reward_ratio']:.2f}" if metrics['risk_reward_ratio'] != float('inf') else "∞"
+            rr_arrow = "▲" if metrics['risk_reward_ratio'] >= 2 else "▼"
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: {rr_color};">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Risk/Reward</span>
+                    <span style="color: {rr_color}; font-size: 1.2rem;">{rr_arrow}</span>
+                </div>
+                <p style="color: {rr_color}; font-size: 2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px {rr_color};">
+                    1:{rr_display}
+                </p>
+                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">Avg Win / Avg Loss</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with kpi2_col4:
+            # Expectancy
+            exp_color = "#39ff14" if metrics['expectancy'] > 0 else "#ff3333"
+            exp_arrow = "▲" if metrics['expectancy'] > 0 else "▼"
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: {exp_color};">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Expectancy</span>
+                    <span style="color: {exp_color}; font-size: 1.2rem;">{exp_arrow}</span>
+                </div>
+                <p style="color: {exp_color}; font-size: 2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px {exp_color};">
+                    ${metrics['expectancy']:.2f}
+                </p>
+                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">Expected value per trade</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.divider()
+        
+        # ============================================
+        # EQUITY CURVE CHART
+        # ============================================
+        st.markdown("### 📈 EQUITY CURVE")
+        
+        # Create equity curve dataframe
+        equity_data = []
+        for i, balance in enumerate(metrics['equity_curve']):
+            if i == 0:
+                label = "Start"
+            elif i == len(metrics['equity_curve']) - 1:
+                label = "Current"
+            else:
+                label = f"Trade {i}"
+            equity_data.append({'Step': i, 'Balance': balance, 'Label': label})
+        
+        equity_df = pd.DataFrame(equity_data)
+        
+        # Create Plotly chart
+        fig = go.Figure()
+        
+        fig.add_trace(go.Scatter(
+            x=equity_df['Step'],
+            y=equity_df['Balance'],
+            mode='lines',
+            name='Equity',
+            line=dict(color='#39ff14', width=2),
+            fill='tozeroy',
+            fillcolor='rgba(57, 255, 20, 0.1)'
+        ))
+        
+        # Add starting balance reference line
+        fig.add_hline(y=starting_balance, line_dash="dash", line_color="#ff6600", 
+                      annotation_text="Starting Balance", annotation_position="right")
+        
+        fig.update_layout(
+            plot_bgcolor='#0a0a0a',
+            paper_bgcolor='#0a0a0a',
+            font=dict(color='#39ff14', family='IBM Plex Mono'),
+            xaxis=dict(
+                title='Trade Number',
+                gridcolor='#1a1a1a',
+                color='#888'
+            ),
+            yaxis=dict(
+                title='Account Balance ($)',
+                gridcolor='#1a1a1a',
+                color='#888'
+            ),
+            margin=dict(l=50, r=50, t=30, b=50),
+            showlegend=False
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        st.divider()
+        
+        # ============================================
+        # STREAKS & EXTREMES
+        # ============================================
+        st.markdown("### 🔥 STREAKS & EXTREME TRADES")
+        
+        streak_col1, streak_col2, streak_col3, streak_col4 = st.columns(4)
+        
+        with streak_col1:
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: #39ff14;">
+                <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Max Win Streak</span>
+                <p style="color: #39ff14; font-size: 1.8rem; font-weight: bold; margin: 5px 0;">
+                    {metrics['max_win_streak']} 🔥
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with streak_col2:
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: #ff3333;">
+                <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Max Loss Streak</span>
+                <p style="color: #ff3333; font-size: 1.8rem; font-weight: bold; margin: 5px 0;">
+                    {metrics['max_loss_streak']} 💀
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with streak_col3:
+            current_streak_icon = "🔥" if metrics['current_streak_type'] else "💀"
+            current_streak_label = "WINS" if metrics['current_streak_type'] else "LOSSES"
+            current_streak_color = "#39ff14" if metrics['current_streak_type'] else "#ff3333"
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: {current_streak_color};">
+                <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Current Streak</span>
+                <p style="color: {current_streak_color}; font-size: 1.8rem; font-weight: bold; margin: 5px 0;">
+                    {metrics['current_streak']} {current_streak_icon}
+                </p>
+                <p style="color: #888; font-size: 0.75rem;">{current_streak_label}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with streak_col4:
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: #ff6600;">
+                <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Best / Worst Trade</span>
+                <p style="color: #39ff14; font-size: 1.4rem; font-weight: bold; margin: 5px 0;">
+                    +${metrics['best_trade']:.2f}
+                </p>
+                <p style="color: #ff3333; font-size: 1.4rem; font-weight: bold; margin: 0;">
+                    ${metrics['worst_trade']:.2f}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.divider()
+        
+        # ============================================
+        # FORMULA EXPLANATIONS
+        # ============================================
+        st.markdown("### 📐 METRIC FORMULAS")
+        
+        st.markdown("""
+        <div class="terminal-bg">
+        <table style="width: 100%; color: #39ff14; font-family: 'IBM Plex Mono', monospace; font-size: 0.9rem;">
+        <tr style="border-bottom: 1px solid #333;">
+            <td style="padding: 10px; color: #ff6600; font-weight: bold;">Win Rate</td>
+            <td style="padding: 10px;">Winning Trades / Total Trades × 100</td>
+            <td style="padding: 10px; color: #888;">{:.1f}%</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #333;">
+            <td style="padding: 10px; color: #ff6600; font-weight: bold;">Profit Factor</td>
+            <td style="padding: 10px;">Gross Profit / Gross Loss</td>
+            <td style="padding: 10px; color: #888;">{:.2f}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #333;">
+            <td style="padding: 10px; color: #ff6600; font-weight: bold;">Sharpe Ratio</td>
+            <td style="padding: 10px;">(Avg Return - Risk Free) / Std Dev × √252</td>
+            <td style="padding: 10px; color: #888;">{:.2f}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #333;">
+            <td style="padding: 10px; color: #ff6600; font-weight: bold;">Max Drawdown</td>
+            <td style="padding: 10px;">(Peak - Trough) / Peak × 100</td>
+            <td style="padding: 10px; color: #888;">{:.2f}%</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #333;">
+            <td style="padding: 10px; color: #ff6600; font-weight: bold;">Risk/Reward</td>
+            <td style="padding: 10px;">Average Win / Average Loss</td>
+            <td style="padding: 10px; color: #888;">1:{:.2f}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; color: #ff6600; font-weight: bold;">Expectancy</td>
+            <td style="padding: 10px;">(Win% × Avg Win) - (Loss% × Avg Loss)</td>
+            <td style="padding: 10px; color: #888;">${:.2f}</td>
+        </tr>
+        </table>
+        </div>
+        """.format(
+            metrics['win_rate'],
+            metrics['profit_factor'] if metrics['profit_factor'] != float('inf') else 0,
+            metrics['sharpe_ratio'],
+            metrics['max_drawdown_pct'],
+            metrics['risk_reward_ratio'] if metrics['risk_reward_ratio'] != float('inf') else 0,
+            metrics['expectancy']
+        ), unsafe_allow_html=True)
+        
+    else:
+        # No data available for selected period
+        st.markdown(f"""
+        <div class="metric-card" style="border-color: #ff6600; text-align: center; padding: 50px;">
+            <h4 style="color: #ff6600; font-size: 1.5rem;">📭 NO DATA FOR {period_label}</h4>
+            <p style="color: #888; margin-top: 20px;">No trades found in the selected time period.</p>
+            <p style="color: #555; font-size: 0.9rem; margin-top: 15px;">Try selecting a different time period or check back after more trades are executed.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+# ============================================
+# TAB 6: TRADE HISTORY
+# ============================================
+with tab6:
     st.subheader("📜 MISSION TRADE LOG • COMPLETE HISTORY")
     
     # Load trade data
