@@ -256,7 +256,7 @@ st.markdown('<p class="main-header">🚀 MISSION CONTROL TRADING DASHBOARD</p>',
 st.markdown(f'<p class="mission-subtitle">$1K CRYPTO MISSION • LAST UPDATED: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} EST</p>', unsafe_allow_html=True)
 
 # Create tabs
-tab1, tab2, tab3, tab4 = st.tabs(["🎯 MISSION CONTROL", "📊 POLYMARKET", "📰 NEWS TRADING", "🔬 BACKTESTING"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎯 MISSION CONTROL", "📊 POLYMARKET", "📰 NEWS TRADING", "🔬 BACKTESTING", "📜 TRADE HISTORY"])
 
 # ============================================
 # TAB 1: MISSION CONTROL (Home)
@@ -1124,6 +1124,357 @@ with tab3:
     ⏳ API INTEGRATION PENDING • News sentiment API being configured • Check back soon for live news trading
     </div>
     """, unsafe_allow_html=True)
+
+# ============================================
+# TAB 5: TRADE HISTORY
+# ============================================
+with tab5:
+    st.subheader("📜 MISSION TRADE LOG • COMPLETE HISTORY")
+    
+    # Load trade data
+    trades = BOT_DATA.get('recent_trades', [])
+    total_trades = len(trades)
+    
+    if total_trades > 0:
+        # Process trades into DataFrame
+        trade_data = []
+        for t in trades:
+            entry_time_str = t.get('entry_time', '')
+            exit_time_str = t.get('exit_time', '')
+            
+            # Parse timestamps
+            try:
+                entry_dt = datetime.fromisoformat(entry_time_str.replace('Z', ''))
+                exit_dt = datetime.fromisoformat(exit_time_str.replace('Z', ''))
+                duration = exit_dt - entry_dt
+                
+                # Format duration
+                total_seconds = duration.total_seconds()
+                if total_seconds < 60:
+                    duration_str = f"{int(total_seconds)}s"
+                elif total_seconds < 3600:
+                    duration_str = f"{int(total_seconds/60)}m"
+                elif total_seconds < 86400:
+                    duration_str = f"{total_seconds/3600:.1f}h"
+                else:
+                    duration_str = f"{total_seconds/86400:.1f}d"
+                    
+                entry_time_fmt = entry_dt.strftime('%Y-%m-%d %H:%M')
+                exit_time_fmt = exit_dt.strftime('%Y-%m-%d %H:%M')
+            except:
+                duration_str = "N/A"
+                entry_time_fmt = entry_time_str[:16] if entry_time_str else 'N/A'
+                exit_time_fmt = exit_time_str[:16] if exit_time_str else 'N/A'
+                entry_dt = None
+            
+            # Get values
+            symbol = t.get('symbol', 'N/A')
+            entry_price = t.get('entry', 0)
+            exit_price = t.get('exit', 0)
+            amount = t.get('amount', 0)
+            pnl = t.get('pnl', 0)
+            pnl_pct = t.get('pnl_pct', 0)
+            strategy = t.get('reason', 'unknown').replace('_', ' ').upper()
+            
+            # Calculate values
+            entry_value = entry_price * amount
+            exit_value = exit_price * amount
+            
+            # Determine side (assuming profit = long, loss context determines)
+            # For completed trades, side can be inferred or we default to LONG
+            side = "LONG"  # Default assumption
+            
+            trade_data.append({
+                'Symbol': symbol,
+                'Side': side,
+                'Entry Price': entry_price,
+                'Exit Price': exit_price,
+                'Position Size': amount,
+                'Entry Value': entry_value,
+                'Exit Value': exit_value,
+                'Realized P&L': pnl,
+                'P&L %': pnl_pct,
+                'Entry Time': entry_time_fmt,
+                'Exit Time': exit_time_fmt,
+                'Duration': duration_str,
+                'Strategy': strategy,
+                '_entry_dt': entry_dt,  # For filtering
+                '_exit_dt': exit_dt if 'exit_dt' in locals() else None
+            })
+        
+        # Create DataFrame
+        df = pd.DataFrame(trade_data)
+        
+        # Calculate summary stats
+        winning_trades = df[df['Realized P&L'] > 0]
+        losing_trades = df[df['Realized P&L'] <= 0]
+        
+        win_count = len(winning_trades)
+        loss_count = len(losing_trades)
+        win_rate = (win_count / total_trades * 100) if total_trades > 0 else 0
+        avg_pnl = df['Realized P&L'].mean()
+        best_trade = df['Realized P&L'].max()
+        worst_trade = df['Realized P&L'].min()
+        
+        # Average hold time
+        durations = []
+        for t in trade_data:
+            if t['_entry_dt'] and t['_exit_dt']:
+                durations.append((t['_exit_dt'] - t['_entry_dt']).total_seconds())
+        avg_hold_seconds = sum(durations) / len(durations) if durations else 0
+        if avg_hold_seconds < 60:
+            avg_hold_time = f"{int(avg_hold_seconds)}s"
+        elif avg_hold_seconds < 3600:
+            avg_hold_time = f"{int(avg_hold_seconds/60)}m"
+        elif avg_hold_seconds < 86400:
+            avg_hold_time = f"{avg_hold_seconds/3600:.1f}h"
+        else:
+            avg_hold_time = f"{avg_hold_seconds/86400:.1f}d"
+        
+        # Summary stats cards
+        st.markdown("### 📊 MISSION STATISTICS")
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            st.markdown(f"""
+            <div class="metric-card" style="padding: 15px;">
+                <span style="color: #ff6600; font-size: 0.8rem; text-transform: uppercase;">Total Trades</span>
+                <p style="color: #39ff14; font-size: 1.8rem; font-weight: bold; margin: 5px 0;">{total_trades}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            wr_color = "#39ff14" if win_rate >= 50 else "#ff6600" if win_rate >= 30 else "#ff3333"
+            st.markdown(f"""
+            <div class="metric-card" style="padding: 15px;">
+                <span style="color: #ff6600; font-size: 0.8rem; text-transform: uppercase;">Win Rate</span>
+                <p style="color: {wr_color}; font-size: 1.8rem; font-weight: bold; margin: 5px 0;">{win_rate:.1f}%</p>
+                <span style="color: #888; font-size: 0.7rem;">{win_count}W / {loss_count}L</span>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            avg_color = "#39ff14" if avg_pnl >= 0 else "#ff3333"
+            st.markdown(f"""
+            <div class="metric-card" style="padding: 15px;">
+                <span style="color: #ff6600; font-size: 0.8rem; text-transform: uppercase;">Avg P&L</span>
+                <p style="color: {avg_color}; font-size: 1.8rem; font-weight: bold; margin: 5px 0;">${avg_pnl:+.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            st.markdown(f"""
+            <div class="metric-card" style="padding: 15px;">
+                <span style="color: #ff6600; font-size: 0.8rem; text-transform: uppercase;">Best / Worst</span>
+                <p style="color: #39ff14; font-size: 1.2rem; font-weight: bold; margin: 5px 0;">${best_trade:+.2f}</p>
+                <p style="color: #ff3333; font-size: 1.2rem; font-weight: bold; margin: 0;">${worst_trade:+.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col5:
+            st.markdown(f"""
+            <div class="metric-card" style="padding: 15px;">
+                <span style="color: #ff6600; font-size: 0.8rem; text-transform: uppercase;">Avg Hold Time</span>
+                <p style="color: #39ff14; font-size: 1.8rem; font-weight: bold; margin: 5px 0;">{avg_hold_time}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.divider()
+        
+        # Filters
+        st.markdown("### 🔍 FILTER TRADES")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            symbols = ['All'] + sorted(df['Symbol'].unique().tolist())
+            selected_symbol = st.selectbox("Symbol", symbols)
+        
+        with col2:
+            strategies = ['All'] + sorted(df['Strategy'].unique().tolist())
+            selected_strategy = st.selectbox("Strategy", strategies)
+        
+        with col3:
+            # Get date range
+            valid_dates = [t['_entry_dt'] for t in trade_data if t['_entry_dt']]
+            if valid_dates:
+                min_date = min(valid_dates).date()
+                max_date = max(valid_dates).date()
+            else:
+                min_date = datetime.now().date()
+                max_date = datetime.now().date()
+            
+            date_from = st.date_input("From", min_date, min_value=min_date, max_value=max_date)
+        
+        with col4:
+            date_to = st.date_input("To", max_date, min_value=min_date, max_value=max_date)
+        
+        # Apply filters
+        filtered_df = df.copy()
+        if selected_symbol != 'All':
+            filtered_df = filtered_df[filtered_df['Symbol'] == selected_symbol]
+        if selected_strategy != 'All':
+            filtered_df = filtered_df[filtered_df['Strategy'] == selected_strategy]
+        if date_from and date_to:
+            filtered_df = filtered_df[
+                (filtered_df['_entry_dt'].dt.date >= date_from) & 
+                (filtered_df['_entry_dt'].dt.date <= date_to)
+            ]
+        
+        # Remove internal columns for display
+        display_df = filtered_df.drop(columns=['_entry_dt', '_exit_dt'], errors='ignore')
+        
+        # Export button
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            csv = display_df.to_csv(index=False)
+            st.download_button(
+                label="📥 EXPORT CSV",
+                data=csv,
+                file_name=f"trade_history_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+        
+        with col2:
+            st.markdown(f"""
+            <div style="text-align: right; padding: 10px 0;">
+                <span style="color: #888;">Showing </span>
+                <span style="color: #39ff14; font-weight: bold;">{len(display_df)}</span>
+                <span style="color: #888;"> of {total_trades} trades</span>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.divider()
+        
+        # Trade History Table
+        st.markdown("### 📋 TRADE HISTORY")
+        
+        # Style the dataframe
+        def style_pnl(val):
+            if isinstance(val, (int, float)):
+                color = '#39ff14' if val >= 0 else '#ff3333'
+                return f'color: {color}; font-weight: bold;'
+            return ''
+        
+        # Create display columns with formatted values
+        table_df = display_df.copy()
+        
+        # Format numeric columns
+        def format_price(val):
+            if val < 0.01:
+                return f"${val:.6f}"
+            elif val < 1:
+                return f"${val:.4f}"
+            else:
+                return f"${val:,.2f}"
+        
+        table_df['Entry Price'] = table_df['Entry Price'].apply(format_price)
+        table_df['Exit Price'] = table_df['Exit Price'].apply(format_price)
+        table_df['Position Size'] = table_df['Position Size'].apply(lambda x: f"{x:.6f}")
+        table_df['Entry Value'] = table_df['Entry Value'].apply(lambda x: f"${x:.2f}")
+        table_df['Exit Value'] = table_df['Exit Value'].apply(lambda x: f"${x:.2f}")
+        table_df['Realized P&L'] = table_df['Realized P&L'].apply(lambda x: f"${x:+.2f}")
+        table_df['P&L %'] = table_df['P&L %'].apply(lambda x: f"{x:+.2f}%")
+        
+        # Color code P&L columns
+        def color_pnl_cell(val):
+            if isinstance(val, str):
+                if val.startswith('$+'):
+                    return 'color: #39ff14; font-weight: bold;'
+                elif val.startswith('$-'):
+                    return 'color: #ff3333; font-weight: bold;'
+                elif val.endswith('%'):
+                    try:
+                        num = float(val.rstrip('%'))
+                        return 'color: #39ff14; font-weight: bold;' if num >= 0 else 'color: #ff3333; font-weight: bold;'
+                    except:
+                        pass
+            return ''
+        
+        # Apply styling
+        styled_table = table_df.style.applymap(color_pnl_cell, subset=['Realized P&L', 'P&L %'])
+        
+        # Display table with pagination if needed
+        if len(table_df) > 20:
+            page_size = 20
+            total_pages = (len(table_df) + page_size - 1) // page_size
+            
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                page = st.number_input("Page", min_value=1, max_value=total_pages, value=1)
+            
+            start_idx = (page - 1) * page_size
+            end_idx = min(start_idx + page_size, len(table_df))
+            
+            st.dataframe(
+                styled_table.iloc[start_idx:end_idx],
+                use_container_width=True,
+                hide_index=True,
+                height=600
+            )
+            
+            st.markdown(f"""
+            <div style="text-align: center; color: #888; font-size: 0.8rem;">
+                Page {page} of {total_pages} | Rows {start_idx+1}-{end_idx} of {len(table_df)}
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.dataframe(
+                styled_table,
+                use_container_width=True,
+                hide_index=True,
+                height=min(600, 60 + len(table_df) * 35)
+            )
+        
+        # Trade summary by symbol
+        st.divider()
+        st.markdown("### 📈 PERFORMANCE BY SYMBOL")
+        
+        symbol_stats = df.groupby('Symbol').agg({
+            'Realized P&L': ['count', 'sum', 'mean'],
+            'P&L %': 'mean'
+        }).round(2)
+        symbol_stats.columns = ['Trades', 'Total P&L', 'Avg P&L', 'Avg P&L %']
+        symbol_stats = symbol_stats.reset_index()
+        symbol_stats['Win Rate'] = df.groupby('Symbol').apply(
+            lambda x: (x['Realized P&L'] > 0).sum() / len(x) * 100
+        ).round(1).values
+        
+        # Sort by total P&L
+        symbol_stats = symbol_stats.sort_values('Total P&L', ascending=False)
+        
+        # Style the summary
+        def style_summary_pnl(val):
+            if isinstance(val, (int, float)):
+                color = '#39ff14' if val >= 0 else '#ff3333'
+                return f'color: {color}; font-weight: bold;'
+            return ''
+        
+        styled_summary = symbol_stats.style.applymap(
+            style_summary_pnl, subset=['Total P&L', 'Avg P&L', 'Avg P&L %']
+        ).format({
+            'Total P&L': '${:+.2f}',
+            'Avg P&L': '${:+.2f}',
+            'Avg P&L %': '{:+.2f}%',
+            'Win Rate': '{:.1f}%'
+        })
+        
+        st.dataframe(
+            styled_summary,
+            use_container_width=True,
+            hide_index=True,
+            height=200
+        )
+        
+    else:
+        # No trades available
+        st.markdown("""
+        <div class="metric-card" style="border-color: #ff6600; text-align: center; padding: 50px;">
+            <h4 style="color: #ff6600; font-size: 1.5rem;">📭 NO TRADE HISTORY</h4>
+            <p style="color: #888; margin-top: 20px;">The mission log is empty. Trades will appear here once executed.</p>
+            <p style="color: #555; font-size: 0.9rem; margin-top: 15px;">Bot is scanning for entry signals...</p>
+        </div>
+        """, unsafe_allow_html=True)
 
 # ============================================
 # TAB 4: BACKTESTING STRATEGIES
