@@ -1,14 +1,21 @@
 {
-  "last_updated": "2026-02-03T01:00:16.873702",
+  "last_updated": "2026-02-03T01:09:17.178932",
   "account": {
-    "total_usd": 279.82,
+    "total_usd": 279.74,
     "balances": [
       {
         "currency": "USDT",
-        "amount": 268.91225584,
-        "free": 268.91225584,
+        "amount": 255.09611584,
+        "free": 255.09611584,
         "used": 0.0,
-        "usd_value": 268.91
+        "usd_value": 255.1
+      },
+      {
+        "currency": "ETH",
+        "amount": 0.00596467,
+        "free": 0.00596467,
+        "used": 0.0,
+        "usd_value": 13.73
       },
       {
         "currency": "USD",
@@ -71,33 +78,33 @@
   "markets": [
     {
       "symbol": "BTC/USDT",
-      "price": 78230.36,
-      "change_24h": 3.636,
-      "volume_24h": 4259941.0426777,
+      "price": 78002.02,
+      "change_24h": 3.269,
+      "volume_24h": 4234875.0009358,
       "high_24h": 79358.24,
       "low_24h": 74965.97
     },
     {
       "symbol": "ETH/USDT",
-      "price": 2317.03,
-      "change_24h": 5.4,
-      "volume_24h": 4929425.83442,
+      "price": 2302.69,
+      "change_24h": 4.863,
+      "volume_24h": 4896217.391209,
       "high_24h": 2395.3,
       "low_24h": 2159.14
     },
     {
       "symbol": "SOL/USDT",
-      "price": 104.08,
-      "change_24h": 6.161,
-      "volume_24h": 341448.59763,
+      "price": 103.5,
+      "change_24h": 4.97,
+      "volume_24h": 337386.18226,
       "high_24h": 106.08,
-      "low_24h": 97.15
+      "low_24h": 97.68
     },
     {
       "symbol": "AVAX/USDT",
-      "price": 10.12,
-      "change_24h": 5.747,
-      "volume_24h": 37853.7855,
+      "price": 10.11,
+      "change_24h": 5.643,
+      "volume_24h": 44895.1345,
       "high_24h": 10.31,
       "low_24h": 9.57
     },
@@ -119,17 +126,17 @@
     },
     {
       "symbol": "DOGE/USDT",
-      "price": 0.10683,
-      "change_24h": 6.489,
-      "volume_24h": 203616.46625,
+      "price": 0.10679,
+      "change_24h": 4.727,
+      "volume_24h": 201908.88681,
       "high_24h": 0.11055,
       "low_24h": 0.09961
     },
     {
       "symbol": "ADA/USDT",
-      "price": 0.2983,
-      "change_24h": 7.767,
-      "volume_24h": 31436.86169,
+      "price": 0.2981,
+      "change_24h": 6.01,
+      "volume_24h": 31426.75756,
       "high_24h": 0.3032,
       "low_24h": 0.276
     },
@@ -143,9 +150,9 @@
     },
     {
       "symbol": "DOT/USDT",
-      "price": 1.533,
-      "change_24h": 3.302,
-      "volume_24h": 2839.9007,
+      "price": 1.575,
+      "change_24h": 6.132,
+      "volume_24h": 2845.0982,
       "high_24h": 1.581,
       "low_24h": 1.476
     }
@@ -380,9 +387,19 @@
     "total_pnl": -4.57
   },
   "trading_state": {
-    "positions": {},
-    "daily_trades": 30,
+    "positions": {
+      "ETH/USDT": {
+        "entry": 2301.58,
+        "amount": 0.006092336924334589,
+        "stop": 2276.14,
+        "target": 2339.74,
+        "time": "2026-02-03T01:09:16.881575",
+        "order_id": "1366913370",
+        "reason": "RSI oversold (22.9) + Volume spike (7.2x)"
+      }
+    },
+    "daily_trades": 31,
     "daily_pnl": -4.5717419424249455,
-    "last_update": "2026-02-02T07:11:05.489196"
+    "last_update": "2026-02-03T01:09:16.881729"
   }
 }
