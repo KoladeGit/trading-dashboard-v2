@@ -1,21 +1,28 @@
 {
-  "last_updated": "2026-02-03T10:00:17.878793",
+  "last_updated": "2026-02-03T11:00:05.182656",
   "account": {
-    "total_usd": 276.68,
+    "total_usd": 277.56,
     "balances": [
       {
         "currency": "USDT",
-        "amount": 243.58378553,
-        "free": 243.58378553,
+        "amount": 230.06895853,
+        "free": 230.06895853,
         "used": 0.0,
-        "usd_value": 243.58
+        "usd_value": 230.07
       },
       {
-        "currency": "SOL",
-        "amount": 0.220608,
-        "free": 0.000608,
-        "used": 0.22,
-        "usd_value": 22.24
+        "currency": "ETH",
+        "amount": 0.00805707,
+        "free": 0.00805707,
+        "used": 0.0,
+        "usd_value": 18.55
+      },
+      {
+        "currency": "BTC",
+        "amount": 0.00023062,
+        "free": 0.00023062,
+        "used": 0.0,
+        "usd_value": 18.02
       },
       {
         "currency": "USD",
@@ -29,7 +36,14 @@
         "amount": 0.872,
         "free": 0.872,
         "used": 0.0,
-        "usd_value": 0.09
+        "usd_value": 0.1
+      },
+      {
+        "currency": "SOL",
+        "amount": 0.000608,
+        "free": 0.000608,
+        "used": 0.0,
+        "usd_value": 0.06
       },
       {
         "currency": "AVAX",
@@ -71,67 +85,67 @@
   "markets": [
     {
       "symbol": "BTC/USDT",
-      "price": 77285.82,
-      "change_24h": -0.535,
-      "volume_24h": 3067859.3528669,
-      "high_24h": 79358.24,
-      "low_24h": 77206.21
+      "price": 78126.73,
+      "change_24h": -1.02,
+      "volume_24h": 2538490.2487907,
+      "high_24h": 79258.39,
+      "low_24h": 77048.41
     },
     {
       "symbol": "ETH/USDT",
-      "price": 2258.12,
-      "change_24h": -2.773,
-      "volume_24h": 2954930.950628,
-      "high_24h": 2395.3,
-      "low_24h": 2256.27
+      "price": 2302.41,
+      "change_24h": -2.894,
+      "volume_24h": 2889564.883504,
+      "high_24h": 2387.38,
+      "low_24h": 2253.46
     },
     {
       "symbol": "SOL/USDT",
-      "price": 100.82,
-      "change_24h": -3.086,
-      "volume_24h": 237260.80939,
-      "high_24h": 106.08,
-      "low_24h": 100.8
+      "price": 102.61,
+      "change_24h": -1.893,
+      "volume_24h": 233722.51267,
+      "high_24h": 105.62,
+      "low_24h": 100.5
     },
     {
       "symbol": "AVAX/USDT",
-      "price": 10.03,
-      "change_24h": -1.28,
-      "volume_24h": 31561.0612,
-      "high_24h": 10.31,
+      "price": 10.17,
+      "change_24h": -0.587,
+      "volume_24h": 32690.401,
+      "high_24h": 10.25,
       "low_24h": 9.85
     },
     {
       "symbol": "ARB/USDT",
       "price": 0.1328,
-      "change_24h": -5.007,
-      "volume_24h": 654.93457,
-      "high_24h": 0.1398,
+      "change_24h": -2.853,
+      "volume_24h": 641.35999,
+      "high_24h": 0.1397,
       "low_24h": 0.1328
     },
     {
       "symbol": "LINK/USDT",
-      "price": 9.51,
-      "change_24h": -3.255,
-      "volume_24h": 31952.6653,
-      "high_24h": 10.0,
+      "price": 9.62,
+      "change_24h": -3.414,
+      "volume_24h": 24531.3526,
+      "high_24h": 9.99,
       "low_24h": 9.51
     },
     {
       "symbol": "DOGE/USDT",
-      "price": 0.10589,
-      "change_24h": -1.662,
-      "volume_24h": 149190.95995,
-      "high_24h": 0.11055,
+      "price": 0.11001,
+      "change_24h": 0.493,
+      "volume_24h": 190483.17463,
+      "high_24h": 0.1103,
       "low_24h": 0.10561
     },
     {
       "symbol": "ADA/USDT",
-      "price": 0.2948,
-      "change_24h": -1.306,
-      "volume_24h": 66839.78806,
-      "high_24h": 0.3032,
-      "low_24h": 0.2944
+      "price": 0.3046,
+      "change_24h": 1.263,
+      "volume_24h": 64007.43725,
+      "high_24h": 0.3046,
+      "low_24h": 0.2942
     },
     {
       "symbol": "MATIC/USDT",
@@ -144,9 +158,9 @@
     {
       "symbol": "DOT/USDT",
       "price": 1.511,
-      "change_24h": -2.704,
-      "volume_24h": 2803.54745,
-      "high_24h": 1.581,
+      "change_24h": -4.003,
+      "volume_24h": 2158.45552,
+      "high_24h": 1.575,
       "low_24h": 1.511
     }
   ],
