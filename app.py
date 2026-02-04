@@ -501,20 +501,47 @@ with tab1:
         )
     
     with col3:
-        # Expected daily based on best backtest strategy (RSI+Volume: ~5.15% monthly)
-        expected_daily = TOTAL_BALANCE * 0.0017  # ~0.17% daily
+        # Expected daily based on actual trade expectancy
+        trades_for_expectancy = ALL_TRADES if ALL_TRADES else BOT_DATA.get('recent_trades', [])
+        if len(trades_for_expectancy) >= 5:
+            wins = [t for t in trades_for_expectancy if t.get('pnl', 0) > 0]
+            losses = [t for t in trades_for_expectancy if t.get('pnl', 0) <= 0]
+            win_rate = len(wins) / len(trades_for_expectancy) if trades_for_expectancy else 0
+            avg_win = sum(t.get('pnl', 0) for t in wins) / len(wins) if wins else 0
+            avg_loss = abs(sum(t.get('pnl', 0) for t in losses) / len(losses)) if losses else 0
+            expectancy = (win_rate * avg_win) - ((1 - win_rate) * avg_loss)
+            # Estimate daily trades from history
+            daily_trades_est = max(len(trades_for_expectancy) / max(len(trades_for_expectancy) / 2, 1), 1)
+            expected_daily = expectancy * daily_trades_est
+            daily_label = "FROM REAL TRADES"
+        else:
+            # Fallback to backtest estimate
+            expected_daily = TOTAL_BALANCE * 0.0017
+            daily_label = "BASED ON BACKTEST"
+        
+        daily_color = "normal" if expected_daily >= 0 else "inverse"
         st.metric(
             "📊 EXPECTED DAILY",
             f"${expected_daily:+.2f}",
-            "BASED ON BACKTEST"
+            daily_label,
+            delta_color=daily_color
         )
     
     with col4:
-        expected_monthly = TOTAL_BALANCE * 0.0515  # ~5.15% monthly from best strategy
+        # Expected monthly based on same expectancy
+        if len(trades_for_expectancy) >= 5:
+            expected_monthly = expected_daily * 30
+            monthly_label = "30-DAY PROJECTION"
+        else:
+            expected_monthly = TOTAL_BALANCE * 0.0515
+            monthly_label = "+5.15% TARGET"
+        
+        monthly_color = "normal" if expected_monthly >= 0 else "inverse"
         st.metric(
             "📅 EXPECTED MONTHLY",
             f"${expected_monthly:+.2f}",
-            "+5.15% TARGET"
+            monthly_label,
+            delta_color=monthly_color
         )
     
     st.divider()
@@ -747,97 +774,258 @@ with tab1:
     
     st.divider()
     
-    # Row 2: P&L PROJECTIONS - REAL MATH FROM TRADE HISTORY
-    st.subheader("📊 P&L PROJECTIONS (Calculated from Actual Trades)")
+    # Row 2: P&L PROJECTIONS - STATISTICAL MONTE CARLO FROM REAL TRADE DATA
+    st.subheader("📊 STATISTICAL PROJECTIONS (Monte Carlo from Trade History)")
     
     # Calculate real metrics from trade history
     trades = ALL_TRADES if ALL_TRADES else BOT_DATA.get('recent_trades', [])
     total_trades = len(trades)
     
     if total_trades >= 10:
-        # Calculate real metrics
+        # ============================================
+        # STATISTICAL CALCULATIONS
+        # ============================================
+        
+        # Extract P&L values
+        pnl_values = [t.get('pnl', 0) for t in trades]
         winning_trades_list = [t for t in trades if t.get('pnl', 0) > 0]
         losing_trades_list = [t for t in trades if t.get('pnl', 0) <= 0]
         
         win_count = len(winning_trades_list)
         loss_count = len(losing_trades_list)
         win_rate = win_count / total_trades if total_trades > 0 else 0
-        
-        avg_win = sum(t.get('pnl', 0) for t in winning_trades_list) / win_count if win_count > 0 else 0
-        avg_loss = abs(sum(t.get('pnl', 0) for t in losing_trades_list) / loss_count) if loss_count > 0 else 0
+        loss_rate = 1 - win_rate
         
         # Calculate trade frequency (trades per day)
         if total_trades >= 2:
-            first_trade_time = datetime.fromisoformat(trades[0].get('entry_time', '').replace('Z', ''))
-            last_trade_time = datetime.fromisoformat(trades[-1].get('exit_time', '').replace('Z', ''))
-            days_span = max((last_trade_time - first_trade_time).days, 1)
-            avg_daily_trades = total_trades / days_span
+            try:
+                first_trade_time = datetime.fromisoformat(trades[0].get('exit_time', '').replace('Z', ''))
+                last_trade_time = datetime.fromisoformat(trades[-1].get('exit_time', '').replace('Z', ''))
+                days_span = max((last_trade_time - first_trade_time).days, 1)
+                avg_daily_trades = total_trades / days_span
+            except:
+                avg_daily_trades = total_trades / max(len(trades) / 2, 1)  # Fallback
         else:
             avg_daily_trades = 1
         
-        # PROJECTION FORMULA:
-        # Daily = (avg_daily_trades × win_rate × avg_win) - (avg_daily_trades × (1-win_rate) × avg_loss)
-        daily_expected_wins = avg_daily_trades * win_rate * avg_win
-        daily_expected_losses = avg_daily_trades * (1 - win_rate) * avg_loss
-        daily_projection = daily_expected_wins - daily_expected_losses
-        weekly_projection = daily_projection * 7
-        monthly_projection = daily_projection * 30
+        # Statistical measures
+        mean_pnl = np.mean(pnl_values)
+        std_pnl = np.std(pnl_values, ddof=1)  # Sample std dev
+        min_pnl = min(pnl_values)
+        max_pnl = max(pnl_values)
         
-        daily_pct = (daily_projection / TOTAL_BALANCE * 100) if TOTAL_BALANCE > 0 else 0
-        weekly_pct = (weekly_projection / TOTAL_BALANCE * 100) if TOTAL_BALANCE > 0 else 0
-        monthly_pct = (monthly_projection / TOTAL_BALANCE * 100) if TOTAL_BALANCE > 0 else 0
+        # Win/loss statistics
+        win_pnls = [t.get('pnl', 0) for t in winning_trades_list]
+        loss_pnls = [t.get('pnl', 0) for t in losing_trades_list]
+        avg_win = np.mean(win_pnls) if win_pnls else 0
+        avg_loss = np.mean(loss_pnls) if loss_pnls else 0
         
-        # Color based on positive/negative
-        daily_color = "#39ff14" if daily_projection >= 0 else "#ff3333"
-        weekly_color = "#39ff14" if weekly_projection >= 0 else "#ff3333"
-        monthly_color = "#39ff14" if monthly_projection >= 0 else "#ff3333"
+        # ============================================
+        # MONTE CARLO SIMULATION
+        # ============================================
+        
+        def run_monte_carlo(pnl_history, n_simulations=10000, n_trades=100, starting_balance=TOTAL_BALANCE):
+            """
+            Run Monte Carlo simulation to project future performance.
+            Uses bootstrapped sampling from historical trade distribution.
+            """
+            simulations = []
+            final_balances = []
+            
+            for _ in range(n_simulations):
+                balance = starting_balance
+                path = [balance]
+                
+                for _ in range(n_trades):
+                    # Sample with replacement from historical P&L distribution
+                    trade_pnl = np.random.choice(pnl_history)
+                    balance += trade_pnl
+                    path.append(balance)
+                
+                simulations.append(path)
+                final_balances.append(balance)
+            
+            return np.array(simulations), np.array(final_balances)
+        
+        # Run simulations for different time horizons
+        daily_trades = int(round(avg_daily_trades))
+        daily_trades = max(1, daily_trades)  # At least 1 trade per day
+        
+        # Projections: 7 days, 30 days, 90 days
+        _, final_7d = run_monte_carlo(pnl_values, n_simulations=5000, n_trades=daily_trades*7)
+        _, final_30d = run_monte_carlo(pnl_values, n_simulations=5000, n_trades=daily_trades*30)
+        _, final_90d = run_monte_carlo(pnl_values, n_simulations=5000, n_trades=daily_trades*90)
+        
+        # Calculate confidence intervals
+        def get_confidence_intervals(final_balances, starting_balance):
+            """Calculate percentile-based confidence intervals."""
+            p5 = np.percentile(final_balances, 5)
+            p25 = np.percentile(final_balances, 25)
+            p50 = np.percentile(final_balances, 50)  # Median
+            p75 = np.percentile(final_balances, 75)
+            p95 = np.percentile(final_balances, 95)
+            
+            # Probabilities
+            prob_profit = np.mean(final_balances > starting_balance) * 100
+            prob_loss = np.mean(final_balances < starting_balance) * 100
+            prob_10pct_gain = np.mean(final_balances > starting_balance * 1.10) * 100
+            prob_10pct_loss = np.mean(final_balances < starting_balance * 0.90) * 100
+            prob_25pct_loss = np.mean(final_balances < starting_balance * 0.75) * 100  # Risk of ruin proxy
+            
+            return {
+                'p5': p5, 'p25': p25, 'p50': p50, 'p75': p75, 'p95': p95,
+                'prob_profit': prob_profit, 'prob_loss': prob_loss,
+                'prob_10pct_gain': prob_10pct_gain, 'prob_10pct_loss': prob_10pct_loss,
+                'prob_25pct_loss': prob_25pct_loss
+            }
+        
+        ci_7d = get_confidence_intervals(final_7d, TOTAL_BALANCE)
+        ci_30d = get_confidence_intervals(final_30d, TOTAL_BALANCE)
+        ci_90d = get_confidence_intervals(final_90d, TOTAL_BALANCE)
+        
+        # ============================================
+        # DISPLAY PROJECTION CARDS
+        # ============================================
         
         col1, col2, col3 = st.columns(3)
         
         with col1:
+            proj_7d = ci_7d['p50'] - TOTAL_BALANCE
+            color_7d = "#39ff14" if proj_7d >= 0 else "#ff3333"
             st.markdown(f"""
             <div class="metric-card">
-            <h4 style="color: #ff6600;">📆 DAILY PROJECTION</h4>
-            <p style="color: {daily_color}; font-size: 1.5rem; font-weight: bold;">{daily_projection:+.2f}</p>
-            <p style="color: #aaa; font-size: 0.9rem;">{daily_pct:+.2f}% of balance</p>
+            <h4 style="color: #ff6600;">📅 7-DAY PROJECTION</h4>
+            <p style="color: {color_7d}; font-size: 1.8rem; font-weight: bold; text-shadow: 0 0 5px {color_7d};">{ci_7d['p50']:,.2f}</p>
+            <p style="color: #aaa; font-size: 0.9rem;">Median outcome</p>
             <hr style="border-color: #333;">
-            <p style="color: #888; font-size: 0.8rem;">Avg {avg_daily_trades:.1f} trades/day<br>× {win_rate*100:.1f}% win rate</p>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #888;">
+                <span>5%: ${ci_7d['p5']:,.2f}</span>
+                <span>95%: ${ci_7d['p95']:,.2f}</span>
+            </div>
+            <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 4px; height: 8px; overflow: hidden; margin-top: 5px;">
+                <div style="background: linear-gradient(90deg, #ff3333, #ff6600, #39ff14); width: {min(max((ci_7d['p50'] - ci_7d['p5']) / (ci_7d['p95'] - ci_7d['p5']) * 100, 0), 100)}%; height: 100%;"></div>
+            </div>
+            <p style="color: #39ff14; font-size: 0.75rem; margin-top: 8px;">🎯 {ci_7d['prob_profit']:.0f}% chance of profit</p>
             </div>
             """, unsafe_allow_html=True)
         
         with col2:
+            proj_30d = ci_30d['p50'] - TOTAL_BALANCE
+            color_30d = "#39ff14" if proj_30d >= 0 else "#ff3333"
             st.markdown(f"""
             <div class="metric-card">
-            <h4 style="color: #ff6600;">📅 WEEKLY PROJECTION</h4>
-            <p style="color: {weekly_color}; font-size: 1.5rem; font-weight: bold;">{weekly_projection:+.2f}</p>
-            <p style="color: #aaa; font-size: 0.9rem;">{weekly_pct:+.2f}% ({avg_daily_trades*7:.0f} trades)</p>
+            <h4 style="color: #ff6600;">📆 30-DAY PROJECTION</h4>
+            <p style="color: {color_30d}; font-size: 1.8rem; font-weight: bold; text-shadow: 0 0 5px {color_30d};">{ci_30d['p50']:,.2f}</p>
+            <p style="color: #aaa; font-size: 0.9rem;">Median outcome</p>
             <hr style="border-color: #333;">
-            <p style="color: #888; font-size: 0.8rem;">Avg win: ${avg_win:.2f}<br>Avg loss: ${avg_loss:.2f}</p>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #888;">
+                <span>5%: ${ci_30d['p5']:,.2f}</span>
+                <span>95%: ${ci_30d['p95']:,.2f}</span>
+            </div>
+            <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 4px; height: 8px; overflow: hidden; margin-top: 5px;">
+                <div style="background: linear-gradient(90deg, #ff3333, #ff6600, #39ff14); width: {min(max((ci_30d['p50'] - ci_30d['p5']) / (ci_30d['p95'] - ci_30d['p5']) * 100, 0), 100)}%; height: 100%;"></div>
+            </div>
+            <p style="color: #39ff14; font-size: 0.75rem; margin-top: 8px;">🎯 {ci_30d['prob_profit']:.0f}% chance of profit</p>
             </div>
             """, unsafe_allow_html=True)
         
         with col3:
+            proj_90d = ci_90d['p50'] - TOTAL_BALANCE
+            color_90d = "#39ff14" if proj_90d >= 0 else "#ff3333"
             st.markdown(f"""
             <div class="metric-card">
-            <h4 style="color: #ff6600;">📆 MONTHLY PROJECTION</h4>
-            <p style="color: {monthly_color}; font-size: 1.5rem; font-weight: bold;">{monthly_projection:+.2f}</p>
-            <p style="color: #aaa; font-size: 0.9rem;">{monthly_pct:+.2f}% ({avg_daily_trades*30:.0f} trades)</p>
+            <h4 style="color: #ff6600;">📅 90-DAY PROJECTION</h4>
+            <p style="color: {color_90d}; font-size: 1.8rem; font-weight: bold; text-shadow: 0 0 5px {color_90d};">{ci_90d['p50']:,.2f}</p>
+            <p style="color: #aaa; font-size: 0.9rem;">Median outcome</p>
             <hr style="border-color: #333;">
-            <p style="color: #888; font-size: 0.8rem;">Sample: {total_trades} trades<br>Confidence: Moderate</p>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #888;">
+                <span>5%: ${ci_90d['p5']:,.2f}</span>
+                <span>95%: ${ci_90d['p95']:,.2f}</span>
+            </div>
+            <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 4px; height: 8px; overflow: hidden; margin-top: 5px;">
+                <div style="background: linear-gradient(90deg, #ff3333, #ff6600, #39ff14); width: {min(max((ci_90d['p50'] - ci_90d['p5']) / (ci_90d['p95'] - ci_90d['p5']) * 100, 0), 100)}%; height: 100%;"></div>
+            </div>
+            <p style="color: #39ff14; font-size: 0.75rem; margin-top: 8px;">🎯 {ci_90d['prob_profit']:.0f}% chance of profit</p>
             </div>
             """, unsafe_allow_html=True)
         
-        # Show the math
+        # ============================================
+        # PROBABILITY MATRIX
+        # ============================================
+        
+        st.markdown("### 🎯 PROBABILITY ANALYSIS")
+        
+        prob_col1, prob_col2, prob_col3 = st.columns(3)
+        
+        with prob_col1:
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: #39ff14;">
+            <h4 style="color: #39ff14; font-size: 0.9rem;">✅ PROFIT PROBABILITY</h4>
+            <p style="color: #39ff14; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{ci_30d['prob_profit']:.1f}%</p>
+            <p style="color: #888; font-size: 0.75rem;">Chance of account growth (30d)</p>
+            <hr style="border-color: #333;">
+            <p style="color: #39ff14; font-size: 0.8rem;">▲ +10%: {ci_30d['prob_10pct_gain']:.1f}%</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with prob_col2:
+            ruin_color = "#ff3333" if ci_30d['prob_25pct_loss'] > 10 else "#ff6600" if ci_30d['prob_25pct_loss'] > 5 else "#39ff14"
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: {ruin_color};">
+            <h4 style="color: #ff6600; font-size: 0.9rem;">⚠️ DRAWDOWN RISK</h4>
+            <p style="color: {ruin_color}; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{ci_30d['prob_10pct_loss']:.1f}%</p>
+            <p style="color: #888; font-size: 0.75rem;">Chance of -10% loss (30d)</p>
+            <hr style="border-color: #333;">
+            <p style="color: {ruin_color}; font-size: 0.8rem;">▼ -25%: {ci_30d['prob_25pct_loss']:.1f}%</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with prob_col3:
+            # Calculate expected value per trade
+            expectancy = (win_rate * avg_win) - (loss_rate * abs(avg_loss))
+            ev_color = "#39ff14" if expectancy > 0 else "#ff3333"
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: {ev_color};">
+            <h4 style="color: #ff6600; font-size: 0.9rem;">💰 EXPECTANCY</h4>
+            <p style="color: {ev_color}; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">${expectancy:.2f}</p>
+            <p style="color: #888; font-size: 0.75rem;">Expected value per trade</p>
+            <hr style="border-color: #333;">
+            <p style="color: #888; font-size: 0.8rem;">Daily EV: ${expectancy * avg_daily_trades:.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # ============================================
+        # STATISTICAL TRANSPARENCY
+        # ============================================
+        
         st.markdown(f"""
         <div class="terminal-bg" style="margin-top: 15px;">
-        <h4 style="color: #ff6600;">📐 PROJECTION MATH (TRANSPARENCY)</h4>
-        <p style="color: #39ff14; font-family: monospace;">
-        Daily = (trades/day × win_rate × avg_win) - (trades/day × loss_rate × avg_loss)<br>
-        Daily = ({avg_daily_trades:.2f} × {win_rate:.2f} × ${avg_win:.2f}) - ({avg_daily_trades:.2f} × {1-win_rate:.2f} × ${avg_loss:.2f})<br>
-        Daily = ${daily_expected_wins:.2f} - ${daily_expected_losses:.2f} = <strong>${daily_projection:.2f}</strong>
-        </p>
-        <p style="color: #888; font-size: 0.8rem; margin-top: 10px;">
-        ⚠️ Based on {total_trades} historical trades. Past performance ≠ future results.
+        <h4 style="color: #ff6600;">📐 STATISTICAL MODEL (TRANSPARENCY)</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+                <p style="color: #ff6600; font-weight: bold;">INPUT DATA:</p>
+                <p style="color: #39ff14; font-family: monospace; font-size: 0.85rem;">
+                • Sample size: {total_trades} trades<br>
+                • Win rate: {win_rate*100:.1f}% ({win_count}W/{loss_count}L)<br>
+                • Mean P&L: ${mean_pnl:.2f} ± ${std_pnl:.2f} (σ)<br>
+                • Range: ${min_pnl:.2f} to ${max_pnl:.2f}<br>
+                • Trade frequency: {avg_daily_trades:.2f}/day
+                </p>
+            </div>
+            <div>
+                <p style="color: #ff6600; font-weight: bold;">MONTE CARLO METHOD:</p>
+                <p style="color: #39ff14; font-family: monospace; font-size: 0.85rem;">
+                • 5,000 simulations per horizon<br>
+                • Bootstrap sampling with replacement<br>
+                • Historical distribution preserved<br>
+                • Confidence intervals: 5th-95th percentile<br>
+                • Current balance: ${TOTAL_BALANCE:.2f}
+                </p>
+            </div>
+        </div>
+        <p style="color: #888; font-size: 0.75rem; margin-top: 10px; border-top: 1px solid #333; padding-top: 10px;">
+        ⚠️ Projections assume future trades follow the same distribution as historical trades. 
+        Past performance does not guarantee future results. Variance will decrease with larger sample sizes.
         </p>
         </div>
         """, unsafe_allow_html=True)
@@ -846,9 +1034,9 @@ with tab1:
         # INSUFFICIENT DATA - Less than 10 trades
         st.markdown(f"""
         <div class="metric-card" style="border-color: #ff6600;">
-        <h4 style="color: #ff6600;">⚠️ INSUFFICIENT DATA FOR PROJECTIONS</h4>
+        <h4 style="color: #ff6600;">⚠️ INSUFFICIENT DATA FOR STATISTICAL PROJECTIONS</h4>
         <p style="color: #aaa; font-size: 1.1rem;">
-            Need at least <strong>10 trades</strong> for reliable projections.<br>
+            Monte Carlo simulations require at least <strong>10 trades</strong> for reliable distribution sampling.<br>
             Current sample: <strong style="color: #ff6600;">{total_trades} trades</strong>
         </p>
         <hr style="border-color: #333;">
@@ -876,7 +1064,7 @@ with tab1:
         
         st.markdown("""
         <p style="color: #888; font-size: 0.8rem; margin-top: 10px;">
-        🔄 Projections will auto-calculate once 10+ trades are recorded.
+        🔄 Monte Carlo projections will auto-calculate once 10+ trades are recorded.
         </p>
         </div>
         """, unsafe_allow_html=True)
