@@ -22,18 +22,53 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Load real balance from bot_data.json
+# Load data from trading-bot/data directory
 def load_bot_data():
-    try:
-        with open('bot_data.json', 'r') as f:
-            return json.load(f)
-    except:
-        return {
-            "account": {"total_usd": 349},
-            "trading_state": {"starting_balance": 376.26}
-        }
+    """Load trading data from the bot data directory."""
+    data_paths = [
+        '/Users/kolade/clawd/trading-bot/data/dashboard.json',
+        'bot_data.json',
+    ]
+    
+    for path in data_paths:
+        try:
+            with open(path, 'r') as f:
+                return json.load(f)
+        except:
+            continue
+    
+    # Fallback defaults
+    return {
+        "account": {"total_usd": 349},
+        "trading_state": {"starting_balance": 376.26},
+        "recent_trades": [],
+        "positions": {}
+    }
+
+def load_trades_from_jsonl():
+    """Load all trades from trades.jsonl file."""
+    trades = []
+    jsonl_paths = [
+        '/Users/kolade/clawd/trading-bot/data/trades.jsonl',
+        'trades.jsonl',
+    ]
+    
+    for path in jsonl_paths:
+        try:
+            with open(path, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        trades.append(json.loads(line))
+            if trades:
+                break
+        except:
+            continue
+    
+    return trades
 
 BOT_DATA = load_bot_data()
+ALL_TRADES = load_trades_from_jsonl()
 
 # ============================================
 # PERFORMANCE METRICS CALCULATION FUNCTIONS
@@ -716,7 +751,7 @@ with tab1:
     st.subheader("📊 P&L PROJECTIONS (Calculated from Actual Trades)")
     
     # Calculate real metrics from trade history
-    trades = BOT_DATA.get('recent_trades', [])
+    trades = ALL_TRADES if ALL_TRADES else BOT_DATA.get('recent_trades', [])
     total_trades = len(trades)
     
     if total_trades >= 10:
@@ -851,8 +886,8 @@ with tab1:
     # Row 3: Trade Statistics (Summary)
     st.subheader("📈 TRADE STATISTICS (Summary - See 📜 TRADE HISTORY tab for full details)")
     
-    # Calculate real trade stats from bot_data
-    trades = BOT_DATA.get('recent_trades', BOT_DATA.get('trades', []))
+    # Calculate real trade stats from jsonl file or bot_data
+    trades = ALL_TRADES if ALL_TRADES else BOT_DATA.get('recent_trades', BOT_DATA.get('trades', []))
     winning_trades = [t for t in trades if t.get('pnl', 0) > 0]
     losing_trades = [t for t in trades if t.get('pnl', 0) <= 0]
     
@@ -1275,8 +1310,8 @@ with tab5:
         period_days = 1
         period_label = "LAST 24 HOURS"
     
-    # Get trades and calculate metrics
-    all_trades = BOT_DATA.get('recent_trades', [])
+    # Get trades and calculate metrics - use ALL_TRADES from jsonl file
+    all_trades = ALL_TRADES if ALL_TRADES else BOT_DATA.get('recent_trades', [])
     starting_balance = BOT_DATA.get('trading_state', {}).get('starting_balance', 376.26)
     current_balance = BOT_DATA.get('account', {}).get('total_usd', starting_balance)
     
@@ -1626,8 +1661,8 @@ with tab5:
 with tab6:
     st.subheader("📜 MISSION TRADE LOG • COMPLETE HISTORY")
     
-    # Load trade data
-    trades = BOT_DATA.get('recent_trades', [])
+    # Load trade data from jsonl file
+    trades = ALL_TRADES if ALL_TRADES else BOT_DATA.get('recent_trades', [])
     total_trades = len(trades)
     
     if total_trades > 0:
