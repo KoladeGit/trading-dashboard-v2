@@ -1,35 +1,21 @@
 {
-  "last_updated": "2026-02-04T13:00:06.156733",
+  "last_updated": "2026-02-04T14:00:13.233440",
   "account": {
-    "total_usd": 263.82,
+    "total_usd": 263.47,
     "balances": [
       {
         "currency": "USDT",
-        "amount": 230.66832363,
-        "free": 149.14425603,
-        "used": 81.5240676,
-        "usd_value": 230.67
-      },
-      {
-        "currency": "SOL",
-        "amount": 0.153116,
-        "free": 0.153116,
-        "used": 0.0,
-        "usd_value": 13.98
+        "amount": 262.58490024,
+        "free": 10.58490024,
+        "used": 252.0,
+        "usd_value": 262.58
       },
       {
         "currency": "USD",
-        "amount": 10.69613265,
-        "free": 10.69613265,
+        "amount": 0.71313265,
+        "free": 0.71313265,
         "used": 0.0,
-        "usd_value": 10.7
-      },
-      {
-        "currency": "ETH",
-        "amount": 0.00391107,
-        "free": 0.00391107,
-        "used": 0.0,
-        "usd_value": 8.32
+        "usd_value": 0.71
       },
       {
         "currency": "DOGE",
@@ -49,6 +35,13 @@
         "currency": "LINK",
         "amount": 0.00112,
         "free": 0.00112,
+        "used": 0.0,
+        "usd_value": 0.01
+      },
+      {
+        "currency": "SOL",
+        "amount": 0.000116,
+        "free": 0.000116,
         "used": 0.0,
         "usd_value": 0.01
       },
@@ -78,67 +71,67 @@
   "markets": [
     {
       "symbol": "BTC/USDT",
-      "price": 72589.84,
-      "change_24h": -3.21,
-      "volume_24h": 3672140.176051,
+      "price": 73448.6,
+      "change_24h": 0.363,
+      "volume_24h": 3325427.021304,
       "high_24h": 76952.65,
       "low_24h": 72209.96
     },
     {
       "symbol": "ETH/USDT",
-      "price": 2126.46,
-      "change_24h": -3.413,
-      "volume_24h": 5142499.166144,
+      "price": 2145.59,
+      "change_24h": 1.023,
+      "volume_24h": 5230485.858978,
       "high_24h": 2351.4,
-      "low_24h": 2095.31
+      "low_24h": 2077.49
     },
     {
       "symbol": "SOL/USDT",
-      "price": 91.32,
-      "change_24h": -7.795,
-      "volume_24h": 396041.17985,
+      "price": 92.41,
+      "change_24h": -5.385,
+      "volume_24h": 383119.28205,
       "high_24h": 101.97,
       "low_24h": 90.06
     },
     {
       "symbol": "AVAX/USDT",
-      "price": 9.6,
-      "change_24h": -1.639,
-      "volume_24h": 29118.1395,
+      "price": 9.78,
+      "change_24h": 1.347,
+      "volume_24h": 30076.9195,
       "high_24h": 10.25,
-      "low_24h": 9.55
+      "low_24h": 9.6
     },
     {
       "symbol": "ARB/USDT",
-      "price": 0.1321,
-      "change_24h": 4.841,
-      "volume_24h": 1874.13966,
+      "price": 0.1312,
+      "change_24h": 2.983,
+      "volume_24h": 1406.33284,
       "high_24h": 0.1355,
-      "low_24h": 0.125
+      "low_24h": 0.1274
     },
     {
       "symbol": "LINK/USDT",
-      "price": 9.11,
-      "change_24h": -1.3,
-      "volume_24h": 18802.0301,
+      "price": 9.22,
+      "change_24h": 1.207,
+      "volume_24h": 23571.2436,
       "high_24h": 9.86,
-      "low_24h": 9.11
+      "low_24h": 9.06
     },
     {
       "symbol": "DOGE/USDT",
-      "price": 0.1027,
-      "change_24h": -1.732,
-      "volume_24h": 221085.60076,
+      "price": 0.10349,
+      "change_24h": 0.828,
+      "volume_24h": 221582.88978,
       "high_24h": 0.11004,
-      "low_24h": 0.10155
+      "low_24h": 0.10147
     },
     {
       "symbol": "ADA/USDT",
-      "price": 0.2844,
-      "change_24h": -1.147,
-      "volume_24h": 33958.3524,
+      "price": 0.2873,
+      "change_24h": 0.035,
+      "volume_24h": 35453.34148,
       "high_24h": 0.3033,
-      "low_24h": 0.2807
+      "low_24h": 0.2816
     },
     {
       "symbol": "MATIC/USDT",
@@ -150,11 +143,11 @@
     },
     {
       "symbol": "DOT/USDT",
-      "price": 1.475,
-      "change_24h": 1.654,
-      "volume_24h": 8743.36147,
+      "price": 1.429,
+      "change_24h": -1.584,
+      "volume_24h": 12193.04039,
       "high_24h": 1.569,
-      "low_24h": 1.429
+      "low_24h": 1.426
     }
   ],
   "positions": [],
@@ -388,8 +381,8 @@
   },
   "trading_state": {
     "positions": {},
-    "daily_trades": 32,
-    "daily_pnl": -4.4539213532249455,
-    "last_update": "2026-02-03T04:16:30.203653"
+    "daily_trades": 0,
+    "daily_pnl": 0.0,
+    "last_update": "2026-02-04T13:11:12.708750"
   }
 }
