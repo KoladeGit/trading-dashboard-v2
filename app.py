@@ -1729,6 +1729,115 @@ with tab5:
         st.divider()
         
         # ============================================
+        # TRADE DISTRIBUTION HISTOGRAM
+        # ============================================
+        st.markdown("### 📊 TRADE DISTRIBUTION (WINS VS LOSSES)")
+        
+        # Get P&L values for histogram
+        trade_pnls = [t.get('pnl', 0) for t in all_trades]
+        
+        # Create histogram figure
+        fig_hist = go.Figure()
+        
+        # Add histogram traces for wins and losses
+        win_pnls = [pnl for pnl in trade_pnls if pnl > 0]
+        loss_pnls = [pnl for pnl in trade_pnls if pnl <= 0]
+        
+        if win_pnls:
+            fig_hist.add_trace(go.Histogram(
+                x=win_pnls,
+                name='Wins',
+                marker_color='#39ff14',
+                opacity=0.8,
+                nbinsx=10,
+                hovertemplate='P&L: $%{x:.2f}<br>Count: %{y}<extra>Wins</extra>'
+            ))
+        
+        if loss_pnls:
+            fig_hist.add_trace(go.Histogram(
+                x=loss_pnls,
+                name='Losses',
+                marker_color='#ff3333',
+                opacity=0.8,
+                nbinsx=10,
+                hovertemplate='P&L: $%{x:.2f}<br>Count: %{y}<extra>Losses</extra>'
+            ))
+        
+        # Add vertical line at zero
+        fig_hist.add_vline(x=0, line_dash="dash", line_color="#ff6600", line_width=2)
+        
+        # Update layout
+        fig_hist.update_layout(
+            plot_bgcolor='#0a0a0a',
+            paper_bgcolor='#0a0a0a',
+            font=dict(color='#39ff14', family='IBM Plex Mono'),
+            barmode='group',
+            xaxis=dict(
+                title='Trade P&L ($)',
+                gridcolor='#1a1a1a',
+                color='#888',
+                zerolinecolor='#ff6600',
+                zerolinewidth=2
+            ),
+            yaxis=dict(
+                title='Number of Trades',
+                gridcolor='#1a1a1a',
+                color='#888'
+            ),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1,
+                font=dict(color='#888')
+            ),
+            margin=dict(l=50, r=50, t=60, b=50),
+            height=400
+        )
+        
+        # Add summary stats below histogram
+        hist_col1, hist_col2, hist_col3, hist_col4 = st.columns(4)
+        
+        with hist_col1:
+            st.markdown(f"""
+            <div style="text-align: center; padding: 10px; background: #1a1a1a; border-radius: 5px;">
+                <span style="color: #888; font-size: 0.8rem;">TOTAL TRADES</span>
+                <p style="color: #39ff14; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{len(trade_pnls)}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with hist_col2:
+            st.markdown(f"""
+            <div style="text-align: center; padding: 10px; background: #1a1a1a; border-radius: 5px;">
+                <span style="color: #888; font-size: 0.8rem;">WINNING TRADES</span>
+                <p style="color: #39ff14; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{len(win_pnls)}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with hist_col3:
+            st.markdown(f"""
+            <div style="text-align: center; padding: 10px; background: #1a1a1a; border-radius: 5px;">
+                <span style="color: #888; font-size: 0.8rem;">LOSING TRADES</span>
+                <p style="color: #ff3333; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">{len(loss_pnls)}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with hist_col4:
+            avg_pnl = sum(trade_pnls) / len(trade_pnls) if trade_pnls else 0
+            avg_color = "#39ff14" if avg_pnl >= 0 else "#ff3333"
+            st.markdown(f"""
+            <div style="text-align: center; padding: 10px; background: #1a1a1a; border-radius: 5px;">
+                <span style="color: #888; font-size: 0.8rem;">AVG P&L</span>
+                <p style="color: {avg_color}; font-size: 1.5rem; font-weight: bold; margin: 5px 0;">${avg_pnl:+.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.plotly_chart(fig_hist, use_container_width=True)
+        
+        st.divider()
+        
+        # ============================================
         # STREAKS & EXTREMES
         # ============================================
         st.markdown("### 🔥 STREAKS & EXTREME TRADES")
