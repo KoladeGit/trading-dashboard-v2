@@ -14,6 +14,15 @@ from datetime import datetime, timedelta
 import json
 import os
 
+# Import projection utilities
+from utils import (
+    calculate_daily_returns,
+    calculate_projections,
+    run_monte_carlo_simulation,
+    calculate_trade_statistics,
+    get_comprehensive_projections
+)
+
 # Page config
 st.set_page_config(
     page_title="MISSION CONTROL • Trading Dashboard",
@@ -224,6 +233,23 @@ def calculate_performance_metrics(trades, starting_balance, current_balance, per
         else:
             break
     
+    # Calculate Calmar Ratio (Annualized Return / Max Drawdown)
+    total_return_pct = ((equity_curve[-1] - starting_balance) / starting_balance * 100) if starting_balance > 0 else 0
+    calmar_ratio = (total_return_pct / max_drawdown_pct) if max_drawdown_pct > 0 else float('inf') if total_return_pct > 0 else 0
+    
+    # Calculate Average Win/Loss in percentage
+    avg_win_pct_values = []
+    avg_loss_pct_values = []
+    for t in trades:
+        pnl_pct = t.get('pnl_pct', 0)
+        if pnl_pct > 0:
+            avg_win_pct_values.append(pnl_pct)
+        elif pnl_pct < 0:
+            avg_loss_pct_values.append(abs(pnl_pct))
+    
+    avg_win_pct = sum(avg_win_pct_values) / len(avg_win_pct_values) if avg_win_pct_values else 0
+    avg_loss_pct = sum(avg_loss_pct_values) / len(avg_loss_pct_values) if avg_loss_pct_values else 0
+    
     # Return all metrics
     return {
         'total_trades': total_trades,
@@ -236,12 +262,16 @@ def calculate_performance_metrics(trades, starting_balance, current_balance, per
         'net_pnl': net_pnl,
         'avg_win': avg_win,
         'avg_loss': avg_loss,
+        'avg_win_pct': avg_win_pct,
+        'avg_loss_pct': avg_loss_pct,
         'profit_factor': profit_factor,
         'risk_reward_ratio': risk_reward_ratio,
         'expectancy': expectancy,
         'max_drawdown': max_drawdown,
         'max_drawdown_pct': max_drawdown_pct,
         'sharpe_ratio': sharpe_ratio,
+        'calmar_ratio': calmar_ratio,
+        'total_return_pct': total_return_pct,
         'best_trade': best_trade,
         'worst_trade': worst_trade,
         'max_win_streak': max_win_streak,
@@ -465,6 +495,83 @@ st.markdown("""
         opacity: 0.7;
         font-family: 'IBM Plex Mono', monospace;
         letter-spacing: 1px;
+    }
+    
+    /* Performance Metrics Grid */
+    .perf-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+    }
+    
+    /* Data-dense metric cards */
+    .metric-dense {
+        padding: 12px 15px !important;
+        margin: 5px 0 !important;
+    }
+    
+    .metric-dense .metric-value {
+        font-size: 1.6rem !important;
+        margin: 3px 0 !important;
+    }
+    
+    .metric-dense .metric-label {
+        font-size: 0.7rem !important;
+        letter-spacing: 0.5px !important;
+    }
+    
+    .metric-dense .metric-sub {
+        font-size: 0.75rem !important;
+        color: #666 !important;
+        margin-top: 2px !important;
+    }
+    
+    /* Terminal scanline effect */
+    .terminal-bg::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: repeating-linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.15),
+            rgba(0, 0, 0, 0.15) 1px,
+            transparent 1px,
+            transparent 2px
+        );
+        pointer-events: none;
+        z-index: 1;
+    }
+    
+    /* Section headers */
+    h3 {
+        color: #ff6600 !important;
+        font-family: 'IBM Plex Mono', monospace !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1px !important;
+        font-size: 1rem !important;
+        margin: 20px 0 10px 0 !important;
+        border-bottom: 1px solid #333;
+        padding-bottom: 5px;
+    }
+    
+    /* Button styling for period selector */
+    button[kind="primary"] {
+        background: linear-gradient(145deg, #39ff14, #2dd60f) !important;
+        color: #0a0a0a !important;
+        font-family: 'IBM Plex Mono', monospace !important;
+        font-weight: 600 !important;
+        border: none !important;
+    }
+    
+    button[kind="secondary"] {
+        background: #1a1a1a !important;
+        border: 1px solid #39ff14 !important;
+        color: #39ff14 !important;
+        font-family: 'IBM Plex Mono', monospace !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -1582,6 +1689,29 @@ with tab5:
             """, unsafe_allow_html=True)
         
         with kpi_col4:
+            # Total Return %
+            ret_color = "#39ff14" if metrics['total_return_pct'] >= 0 else "#ff3333"
+            ret_arrow = "▲" if metrics['total_return_pct'] >= 0 else "▼"
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: {ret_color};">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Total Return</span>
+                    <span style="color: {ret_color}; font-size: 1.2rem;">{ret_arrow}</span>
+                </div>
+                <p style="color: {ret_color}; font-size: 2.2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px {ret_color};">
+                    {metrics['total_return_pct']:+.2f}%
+                </p>
+                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">${metrics['net_pnl']:+.2f}</p>
+                <p style="color: #555; font-size: 0.7rem;">Net P&L</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # ============================================
+        # KEY METRICS CARDS - ROW 2 (RISK METRICS)
+        # ============================================
+        kpi2_col1, kpi2_col2, kpi2_col3, kpi2_col4 = st.columns(4)
+        
+        with kpi2_col1:
             # Max Drawdown
             dd_color = "#ff3333" if metrics['max_drawdown_pct'] >= 10 else "#ff6600" if metrics['max_drawdown_pct'] >= 5 else "#39ff14"
             dd_arrow = "▼"
@@ -1591,64 +1721,45 @@ with tab5:
                     <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Max Drawdown</span>
                     <span style="color: {dd_color}; font-size: 1.2rem;">{dd_arrow}</span>
                 </div>
-                <p style="color: {dd_color}; font-size: 2.2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px {dd_color};">
+                <p style="color: {dd_color}; font-size: 2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px {dd_color};">
                     {metrics['max_drawdown_pct']:.2f}%
                 </p>
                 <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">${metrics['max_drawdown']:.2f}</p>
-                <p style="color: #555; font-size: 0.7rem;">Peak to Trough</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # ============================================
-        # KEY METRICS CARDS - ROW 2
-        # ============================================
-        kpi2_col1, kpi2_col2, kpi2_col3, kpi2_col4 = st.columns(4)
-        
-        with kpi2_col1:
-            # Average Win
-            st.markdown(f"""
-            <div class="metric-card" style="border-color: #39ff14;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Average Win</span>
-                    <span style="color: #39ff14; font-size: 1.2rem;">▲</span>
-                </div>
-                <p style="color: #39ff14; font-size: 2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px #39ff14;">
-                    ${metrics['avg_win']:.2f}
-                </p>
-                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">{metrics['win_count']} winning trades</p>
             </div>
             """, unsafe_allow_html=True)
         
         with kpi2_col2:
-            # Average Loss
+            # Calmar Ratio
+            calmar_color = "#39ff14" if metrics['calmar_ratio'] >= 3 else "#ff6600" if metrics['calmar_ratio'] >= 1 else "#ff3333"
+            calmar_arrow = "▲" if metrics['calmar_ratio'] >= 3 else "▼"
+            calmar_display = f"{metrics['calmar_ratio']:.2f}" if metrics['calmar_ratio'] != float('inf') else "∞"
             st.markdown(f"""
-            <div class="metric-card" style="border-color: #ff3333;">
+            <div class="metric-card" style="border-color: {calmar_color};">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Average Loss</span>
-                    <span style="color: #ff3333; font-size: 1.2rem;">▼</span>
+                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Calmar Ratio</span>
+                    <span style="color: {calmar_color}; font-size: 1.2rem;">{calmar_arrow}</span>
                 </div>
-                <p style="color: #ff3333; font-size: 2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px #ff3333;">
-                    ${metrics['avg_loss']:.2f}
+                <p style="color: {calmar_color}; font-size: 2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px {calmar_color};">
+                    {calmar_display}
                 </p>
-                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">{metrics['loss_count']} losing trades</p>
+                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">Return / Max DD</p>
             </div>
             """, unsafe_allow_html=True)
         
         with kpi2_col3:
-            # Risk/Reward Ratio
-            rr_color = "#39ff14" if metrics['risk_reward_ratio'] >= 2 else "#ff6600" if metrics['risk_reward_ratio'] >= 1 else "#ff3333"
-            rr_display = f"{metrics['risk_reward_ratio']:.2f}" if metrics['risk_reward_ratio'] != float('inf') else "∞"
-            rr_arrow = "▲" if metrics['risk_reward_ratio'] >= 2 else "▼"
+            # Sharpe Ratio
+            sharpe_color = "#39ff14" if metrics['sharpe_ratio'] >= 2 else "#ff6600" if metrics['sharpe_ratio'] >= 1 else "#ff3333"
+            sharpe_arrow = "▲" if metrics['sharpe_ratio'] >= 2 else "▼"
             st.markdown(f"""
-            <div class="metric-card" style="border-color: {rr_color};">
+            <div class="metric-card" style="border-color: {sharpe_color};">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Risk/Reward</span>
-                    <span style="color: {rr_color}; font-size: 1.2rem;">{rr_arrow}</span>
+                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Sharpe Ratio</span>
+                    <span style="color: {sharpe_color}; font-size: 1.2rem;">{sharpe_arrow}</span>
                 </div>
-                <p style="color: {rr_color}; font-size: 2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px {rr_color};">
-                    1:{rr_display}
+                <p style="color: {sharpe_color}; font-size: 2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px {sharpe_color};">
+                    {metrics['sharpe_ratio']:.2f}
                 </p>
-                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">Avg Win / Avg Loss</p>
+                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">σ = {metrics['std_dev']:.2f}</p>
             </div>
             """, unsafe_allow_html=True)
         
@@ -1666,6 +1777,78 @@ with tab5:
                     ${metrics['expectancy']:.2f}
                 </p>
                 <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">Expected value per trade</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # ============================================
+        # KEY METRICS CARDS - ROW 3 (TRADE STATISTICS)
+        # ============================================
+        st.markdown("### 💰 TRADE STATISTICS")
+        kpi3_col1, kpi3_col2, kpi3_col3, kpi3_col4 = st.columns(4)
+        
+        with kpi3_col1:
+            # Average Win ($)
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: #39ff14;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Avg Win ($)</span>
+                    <span style="color: #39ff14; font-size: 1.2rem;">▲</span>
+                </div>
+                <p style="color: #39ff14; font-size: 2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px #39ff14;">
+                    ${metrics['avg_win']:.2f}
+                </p>
+                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">{metrics['avg_win_pct']:.2f}% avg</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with kpi3_col2:
+            # Average Loss ($)
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: #ff3333;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Avg Loss ($)</span>
+                    <span style="color: #ff3333; font-size: 1.2rem;">▼</span>
+                </div>
+                <p style="color: #ff3333; font-size: 2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px #ff3333;">
+                    ${metrics['avg_loss']:.2f}
+                </p>
+                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">{metrics['avg_loss_pct']:.2f}% avg</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with kpi3_col3:
+            # Risk/Reward Ratio
+            rr_color = "#39ff14" if metrics['risk_reward_ratio'] >= 2 else "#ff6600" if metrics['risk_reward_ratio'] >= 1 else "#ff3333"
+            rr_display = f"{metrics['risk_reward_ratio']:.2f}" if metrics['risk_reward_ratio'] != float('inf') else "∞"
+            rr_arrow = "▲" if metrics['risk_reward_ratio'] >= 2 else "▼"
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: {rr_color};">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Risk/Reward</span>
+                    <span style="color: {rr_color}; font-size: 1.2rem;">{rr_arrow}</span>
+                </div>
+                <p style="color: {rr_color}; font-size: 2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px {rr_color};">
+                    1:{rr_display}
+                </p>
+                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">R:R Ratio</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with kpi3_col4:
+            # Profit Factor
+            pf_color = "#39ff14" if metrics['profit_factor'] >= 1.5 else "#ff6600" if metrics['profit_factor'] >= 1 else "#ff3333"
+            pf_arrow = "▲" if metrics['profit_factor'] >= 1.5 else "▼"
+            pf_display = f"{metrics['profit_factor']:.2f}" if metrics['profit_factor'] != float('inf') else "∞"
+            st.markdown(f"""
+            <div class="metric-card" style="border-color: {pf_color};">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #ff6600; font-size: 0.85rem; text-transform: uppercase;">Profit Factor</span>
+                    <span style="color: {pf_color}; font-size: 1.2rem;">{pf_arrow}</span>
+                </div>
+                <p style="color: {pf_color}; font-size: 2rem; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px {pf_color};">
+                    {pf_display}
+                </p>
+                <p style="color: #888; font-size: 0.8rem; margin-top: 5px;">Gross Profit/Loss</p>
             </div>
             """, unsafe_allow_html=True)
         
@@ -1907,13 +2090,18 @@ with tab5:
             <td style="padding: 10px; color: #888;">{:.1f}%</td>
         </tr>
         <tr style="border-bottom: 1px solid #333;">
+            <td style="padding: 10px; color: #ff6600; font-weight: bold;">Total Return</td>
+            <td style="padding: 10px;">(Current Balance - Starting Balance) / Starting Balance × 100</td>
+            <td style="padding: 10px; color: #888;">{:.2f}%</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #333;">
             <td style="padding: 10px; color: #ff6600; font-weight: bold;">Profit Factor</td>
             <td style="padding: 10px;">Gross Profit / Gross Loss</td>
             <td style="padding: 10px; color: #888;">{:.2f}</td>
         </tr>
         <tr style="border-bottom: 1px solid #333;">
             <td style="padding: 10px; color: #ff6600; font-weight: bold;">Sharpe Ratio</td>
-            <td style="padding: 10px;">(Avg Return - Risk Free) / Std Dev × √252</td>
+            <td style="padding: 10px;">(Mean Return - Risk Free Rate) / Std Dev × √252</td>
             <td style="padding: 10px; color: #888;">{:.2f}</td>
         </tr>
         <tr style="border-bottom: 1px solid #333;">
@@ -1922,24 +2110,38 @@ with tab5:
             <td style="padding: 10px; color: #888;">{:.2f}%</td>
         </tr>
         <tr style="border-bottom: 1px solid #333;">
+            <td style="padding: 10px; color: #ff6600; font-weight: bold;">Calmar Ratio</td>
+            <td style="padding: 10px;">Annualized Return / Max Drawdown</td>
+            <td style="padding: 10px; color: #888;">{:.2f}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #333;">
             <td style="padding: 10px; color: #ff6600; font-weight: bold;">Risk/Reward</td>
             <td style="padding: 10px;">Average Win / Average Loss</td>
             <td style="padding: 10px; color: #888;">1:{:.2f}</td>
         </tr>
-        <tr>
+        <tr style="border-bottom: 1px solid #333;">
             <td style="padding: 10px; color: #ff6600; font-weight: bold;">Expectancy</td>
             <td style="padding: 10px;">(Win% × Avg Win) - (Loss% × Avg Loss)</td>
             <td style="padding: 10px; color: #888;">${:.2f}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; color: #ff6600; font-weight: bold;">Avg Win/Loss %</td>
+            <td style="padding: 10px;">Average of individual trade P&L percentages</td>
+            <td style="padding: 10px; color: #888;">{:.2f}% / {:.2f}%</td>
         </tr>
         </table>
         </div>
         """.format(
             metrics['win_rate'],
+            metrics['total_return_pct'],
             metrics['profit_factor'] if metrics['profit_factor'] != float('inf') else 0,
             metrics['sharpe_ratio'],
             metrics['max_drawdown_pct'],
+            metrics['calmar_ratio'] if metrics['calmar_ratio'] != float('inf') else 0,
             metrics['risk_reward_ratio'] if metrics['risk_reward_ratio'] != float('inf') else 0,
-            metrics['expectancy']
+            metrics['expectancy'],
+            metrics['avg_win_pct'],
+            metrics['avg_loss_pct']
         ), unsafe_allow_html=True)
         
     else:
