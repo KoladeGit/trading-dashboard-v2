@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-02-05T12:00:10.258355",
+  "last_updated": "2026-02-06T09:00:12.321091",
   "account": {
     "error": "binanceus {\"code\":-2015,\"msg\":\"Invalid API-key, IP, or permissions for action.\"}"
   },
@@ -237,6 +237,6 @@
     "positions": {},
     "daily_trades": 0,
     "daily_pnl": 0.0,
-    "last_update": "2026-02-04T13:11:12.708750"
+    "last_update": "2026-02-05T12:15:20.764811"
   }
 }
