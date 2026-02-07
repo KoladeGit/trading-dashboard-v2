@@ -2193,968 +2193,350 @@ with tab5:
 # TAB 6: TRADE HISTORY
 # ============================================
 with tab6:
-    st.subheader("📜 INSTITUTIONAL TRADE JOURNAL • COMPLETE MISSION LOG")
+    st.subheader("📜 MISSION TRADE LOG • COMPLETE HISTORY")
     
-    # ============================================
-    # ENHANCED TRADE DATA PROCESSING
-    # ============================================
+    # Load trade data from jsonl file
     trades = ALL_TRADES if ALL_TRADES else BOT_DATA.get('recent_trades', [])
     total_trades = len(trades)
     
-    # Add custom CSS for professional table styling
-    st.markdown("""
-    <style>
-    .professional-table {
-        background-color: #0d1117 !important;
-        color: #c9d1d9 !important;
-        font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
-        border: 1px solid #30363d !important;
-    }
-    .trade-detail-expander {
-        background: rgba(25, 25, 25, 0.8) !important;
-        border: 1px solid #444 !important;
-        border-radius: 4px !important;
-        margin: 5px 0 !important;
-        font-family: monospace !important;
-    }
-    .streak-indicator {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 3px;
-        font-size: 0.7rem;
-        font-weight: bold;
-        margin: 0 2px;
-    }
-    .win-streak {
-        background: #238636;
-        color: white;
-    }
-    .loss-streak {
-        background: #da3633;
-        color: white;
-    }
-    .running-pnl-positive {
-        color: #3fb950;
-        font-weight: bold;
-        text-shadow: 0 0 3px #3fb950;
-    }
-    .running-pnl-negative {
-        color: #f85149;
-        font-weight: bold;
-        text-shadow: 0 0 3px #f85149;
-    }
-    .trade-frequency-chart {
-        background: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 6px;
-        padding: 1rem;
-    }
-    .institutional-metrics {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin: 1rem 0;
-    }
-    .metric-terminal {
-        background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
-        border: 1px solid #21262d;
-        border-radius: 6px;
-        padding: 1rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    }
-    .metric-terminal h4 {
-        color: #ff6b35;
-        margin: 0 0 0.5rem 0;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        font-family: monospace;
-    }
-    .metric-terminal .value {
-        font-size: 1.8rem;
-        font-weight: 700;
-        margin: 0.2rem 0;
-        font-family: monospace;
-    }
-    .metric-terminal .subtext {
-        color: #8b949e;
-        font-size: 0.75rem;
-        margin: 0;
-        font-family: monospace;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
     if total_trades > 0:
-        # ============================================
-        # COMPREHENSIVE TRADE ANALYSIS
-        # ============================================
+        # Process trades into DataFrame
         trade_data = []
-        running_pnl = 0
-        current_streak = 0
-        current_streak_type = None
-        max_win_streak = 0
-        max_loss_streak = 0
-        win_streak_count = 0
-        loss_streak_count = 0
-        
-        # Sort trades by entry time for proper sequence analysis
-        sorted_trades = sorted(trades, key=lambda x: x.get('entry_time', ''))
-        
-        for i, t in enumerate(sorted_trades):
+        for t in trades:
             entry_time_str = t.get('entry_time', '')
             exit_time_str = t.get('exit_time', '')
             
-            # Enhanced timestamp parsing
+            # Parse timestamps
             try:
-                entry_dt = datetime.fromisoformat(entry_time_str.replace('Z', '+00:00'))
-                exit_dt = datetime.fromisoformat(exit_time_str.replace('Z', '+00:00'))
+                entry_dt = datetime.fromisoformat(entry_time_str.replace('Z', ''))
+                exit_dt = datetime.fromisoformat(exit_time_str.replace('Z', ''))
                 duration = exit_dt - entry_dt
                 
-                # Precise duration formatting
+                # Format duration
                 total_seconds = duration.total_seconds()
-                hours = int(total_seconds // 3600)
-                minutes = int((total_seconds % 3600) // 60)
-                seconds = int(total_seconds % 60)
-                
                 if total_seconds < 60:
-                    duration_str = f"{seconds}s"
+                    duration_str = f"{int(total_seconds)}s"
                 elif total_seconds < 3600:
-                    duration_str = f"{minutes}m {seconds}s"
+                    duration_str = f"{int(total_seconds/60)}m"
                 elif total_seconds < 86400:
-                    duration_str = f"{hours}h {minutes}m"
+                    duration_str = f"{total_seconds/3600:.1f}h"
                 else:
-                    days = int(total_seconds // 86400)
-                    remaining_hours = hours % 24
-                    duration_str = f"{days}d {remaining_hours}h"
+                    duration_str = f"{total_seconds/86400:.1f}d"
                     
-                # Professional timestamp formatting
-                entry_time_fmt = entry_dt.strftime('%Y-%m-%d %H:%M:%S UTC')
-                exit_time_fmt = exit_dt.strftime('%Y-%m-%d %H:%M:%S UTC')
-                
-                # Timezone-aware time objects for analysis
-                entry_hour = entry_dt.hour
-                exit_hour = exit_dt.hour
-                trade_date = entry_dt.date()
-                
-            except Exception as e:
-                duration_str = "PARSE_ERROR"
-                entry_time_fmt = entry_time_str[:19] if entry_time_str else 'UNKNOWN'
-                exit_time_fmt = exit_time_str[:19] if exit_time_str else 'UNKNOWN'
+                entry_time_fmt = entry_dt.strftime('%Y-%m-%d %H:%M')
+                exit_time_fmt = exit_dt.strftime('%Y-%m-%d %H:%M')
+            except:
+                duration_str = "N/A"
+                entry_time_fmt = entry_time_str[:16] if entry_time_str else 'N/A'
+                exit_time_fmt = exit_time_str[:16] if exit_time_str else 'N/A'
                 entry_dt = None
-                exit_dt = None
-                entry_hour = 0
-                exit_hour = 0
-                trade_date = datetime.now().date()
             
-            # Core trade data
-            symbol = t.get('symbol', 'UNKNOWN')
-            asset = symbol.split('/')[0] if '/' in symbol else symbol
-            entry_price = float(t.get('entry', 0))
-            exit_price = float(t.get('exit', 0))
-            amount = float(t.get('amount', 0))
-            pnl = float(t.get('pnl', 0))
-            pnl_pct = float(t.get('pnl_pct', 0))
-            strategy = t.get('reason', 'UNKNOWN_SIGNAL').replace('_', ' ').upper()
+            # Get values
+            symbol = t.get('symbol', 'N/A')
+            entry_price = t.get('entry', 0)
+            exit_price = t.get('exit', 0)
+            amount = t.get('amount', 0)
+            pnl = t.get('pnl', 0)
+            pnl_pct = t.get('pnl_pct', 0)
+            strategy = t.get('reason', 'unknown').replace('_', ' ').upper()
             
-            # Update running P&L
-            running_pnl += pnl
-            
-            # Streak analysis
-            is_win = pnl > 0
-            if current_streak_type == 'WIN' and is_win:
-                current_streak += 1
-            elif current_streak_type == 'LOSS' and not is_win:
-                current_streak += 1
-            else:
-                # Streak changed
-                if current_streak_type == 'WIN':
-                    max_win_streak = max(max_win_streak, current_streak)
-                elif current_streak_type == 'LOSS':
-                    max_loss_streak = max(max_loss_streak, current_streak)
-                    
-                current_streak_type = 'WIN' if is_win else 'LOSS'
-                current_streak = 1
-            
-            # Calculate trade values
+            # Calculate values
             entry_value = entry_price * amount
             exit_value = exit_price * amount
             
-            # Determine trade direction based on price movement
-            if entry_price < exit_price and pnl > 0:
-                side = "LONG"
-            elif entry_price > exit_price and pnl > 0:
-                side = "SHORT"
-            elif entry_price < exit_price and pnl < 0:
-                side = "SHORT"  # Likely stopped out on short
-            else:
-                side = "LONG"   # Default assumption
+            # Determine side (assuming profit = long, loss context determines)
+            # For completed trades, side can be inferred or we default to LONG
+            side = "LONG"  # Default assumption
             
-            # Risk metrics
-            risk_per_trade = abs(pnl) if pnl < 0 else (exit_value * 0.02)  # Estimate 2% risk
-            risk_reward = abs(pnl / risk_per_trade) if risk_per_trade > 0 else 0
-            
-            # Build comprehensive trade record
-            trade_record = {
-                # Core identifiers
-                'Trade #': i + 1,
+            trade_data.append({
                 'Symbol': symbol,
-                'Asset': asset,
                 'Side': side,
-                'Strategy': strategy,
-                
-                # Pricing & Position
                 'Entry Price': entry_price,
                 'Exit Price': exit_price,
                 'Position Size': amount,
                 'Entry Value': entry_value,
                 'Exit Value': exit_value,
-                
-                # P&L Analysis
                 'Realized P&L': pnl,
                 'P&L %': pnl_pct,
-                'Running P&L': running_pnl,
-                'Risk/Reward': risk_reward,
-                
-                # Timing Analysis
                 'Entry Time': entry_time_fmt,
                 'Exit Time': exit_time_fmt,
                 'Duration': duration_str,
-                'Entry Hour': entry_hour,
-                'Exit Hour': exit_hour,
-                'Trade Date': trade_date,
-                
-                # Streak Analysis
-                'Current Streak': current_streak,
-                'Streak Type': current_streak_type,
-                'Is Winner': is_win,
-                
-                # Technical data for filtering
-                '_entry_dt': entry_dt,
-                '_exit_dt': exit_dt,
-                '_duration_seconds': total_seconds if 'total_seconds' in locals() else 0,
-                '_sequence': i + 1
-            }
-            
-            trade_data.append(trade_record)
+                'Strategy': strategy,
+                '_entry_dt': entry_dt,  # For filtering
+                '_exit_dt': exit_dt if 'exit_dt' in locals() else None
+            })
         
-        # Final streak update
-        if current_streak_type == 'WIN':
-            max_win_streak = max(max_win_streak, current_streak)
-        elif current_streak_type == 'LOSS':
-            max_loss_streak = max(max_loss_streak, current_streak)
-        
-        # Create comprehensive DataFrame
+        # Create DataFrame
         df = pd.DataFrame(trade_data)
         
-        # ============================================
-        # INSTITUTIONAL PERFORMANCE METRICS
-        # ============================================
+        # Calculate summary stats
         winning_trades = df[df['Realized P&L'] > 0]
         losing_trades = df[df['Realized P&L'] <= 0]
         
-        # Basic metrics
         win_count = len(winning_trades)
         loss_count = len(losing_trades)
         win_rate = (win_count / total_trades * 100) if total_trades > 0 else 0
-        
-        # P&L Analysis
-        total_pnl = df['Realized P&L'].sum()
         avg_pnl = df['Realized P&L'].mean()
         best_trade = df['Realized P&L'].max()
         worst_trade = df['Realized P&L'].min()
         
-        # Win/Loss Analysis
-        avg_win = winning_trades['Realized P&L'].mean() if len(winning_trades) > 0 else 0
-        avg_loss = losing_trades['Realized P&L'].mean() if len(losing_trades) > 0 else 0
-        profit_factor = abs(avg_win / avg_loss) if avg_loss != 0 else float('inf')
-        
-        # Risk Metrics
-        largest_drawdown = 0
-        peak_balance = 0
-        current_balance = 0
-        for pnl in df['Realized P&L']:
-            current_balance += pnl
-            peak_balance = max(peak_balance, current_balance)
-            drawdown = peak_balance - current_balance
-            largest_drawdown = max(largest_drawdown, drawdown)
-        
-        # Timing Analysis
-        avg_duration_seconds = df['_duration_seconds'].mean()
-        
-        if avg_duration_seconds < 60:
-            avg_hold_time = f"{int(avg_duration_seconds)}s"
-        elif avg_duration_seconds < 3600:
-            avg_hold_time = f"{int(avg_duration_seconds/60)}m"
-        elif avg_duration_seconds < 86400:
-            avg_hold_time = f"{avg_duration_seconds/3600:.1f}h"
+        # Average hold time
+        durations = []
+        for t in trade_data:
+            if t['_entry_dt'] and t['_exit_dt']:
+                durations.append((t['_exit_dt'] - t['_entry_dt']).total_seconds())
+        avg_hold_seconds = sum(durations) / len(durations) if durations else 0
+        if avg_hold_seconds < 60:
+            avg_hold_time = f"{int(avg_hold_seconds)}s"
+        elif avg_hold_seconds < 3600:
+            avg_hold_time = f"{int(avg_hold_seconds/60)}m"
+        elif avg_hold_seconds < 86400:
+            avg_hold_time = f"{avg_hold_seconds/3600:.1f}h"
         else:
-            avg_hold_time = f"{avg_duration_seconds/86400:.1f}d"
+            avg_hold_time = f"{avg_hold_seconds/86400:.1f}d"
         
-        # Trade frequency analysis
-        if df['_entry_dt'].notna().any():
-            first_trade_dt = df['_entry_dt'].min()
-            last_trade_dt = df['_entry_dt'].max()
-            trading_period_days = (last_trade_dt - first_trade_dt).days + 1
-            trades_per_day = total_trades / trading_period_days if trading_period_days > 0 else 0
-            
-            # Hour-by-hour analysis
-            hour_analysis = df.groupby('Entry Hour').size()
-            most_active_hour = hour_analysis.idxmax() if len(hour_analysis) > 0 else 0
-            
-        else:
-            trading_period_days = 1
-            trades_per_day = total_trades
-            most_active_hour = 12
-        
-        # ============================================
-        # MISSION CONTROL DASHBOARD
-        # ============================================
-        st.markdown("### 🎯 INSTITUTIONAL PERFORMANCE METRICS")
-        
-        # Create institutional-grade metrics display
-        metrics_html = f"""
-        <div class="institutional-metrics">
-            <div class="metric-terminal">
-                <h4>🎯 MISSION TRADES</h4>
-                <div class="value" style="color: #58a6ff;">{total_trades:,}</div>
-                <div class="subtext">Total Executed</div>
-            </div>
-            <div class="metric-terminal">
-                <h4>📊 WIN RATIO</h4>
-                <div class="value" style="color: {'#3fb950' if win_rate >= 50 else '#ff7b72' if win_rate < 30 else '#f0883e'};">{win_rate:.1f}%</div>
-                <div class="subtext">{win_count}W / {loss_count}L</div>
-            </div>
-            <div class="metric-terminal">
-                <h4>💰 TOTAL P&L</h4>
-                <div class="value running-pnl-{'positive' if total_pnl >= 0 else 'negative'}">${total_pnl:+.2f}</div>
-                <div class="subtext">Realized Gains</div>
-            </div>
-            <div class="metric-terminal">
-                <h4>📈 PROFIT FACTOR</h4>
-                <div class="value" style="color: {'#3fb950' if profit_factor >= 1.5 else '#ff7b72' if profit_factor < 1 else '#f0883e'};">{profit_factor:.2f}</div>
-                <div class="subtext">Risk/Reward Ratio</div>
-            </div>
-            <div class="metric-terminal">
-                <h4>⏱️ AVG DURATION</h4>
-                <div class="value" style="color: #a5a5a5;">{avg_hold_time}</div>
-                <div class="subtext">Position Hold Time</div>
-            </div>
-            <div class="metric-terminal">
-                <h4>📉 MAX DRAWDOWN</h4>
-                <div class="value" style="color: #ff7b72;">${largest_drawdown:.2f}</div>
-                <div class="subtext">Peak-to-Valley</div>
-            </div>
-            <div class="metric-terminal">
-                <h4>🔥 WIN STREAK</h4>
-                <div class="value" style="color: #3fb950;">{max_win_streak}</div>
-                <div class="subtext">Max Consecutive Wins</div>
-            </div>
-            <div class="metric-terminal">
-                <h4>❄️ LOSS STREAK</h4>
-                <div class="value" style="color: #ff7b72;">{max_loss_streak}</div>
-                <div class="subtext">Max Consecutive Losses</div>
-            </div>
-            <div class="metric-terminal">
-                <h4>⚡ FREQUENCY</h4>
-                <div class="value" style="color: #f0883e;">{trades_per_day:.1f}/day</div>
-                <div class="subtext">Trading Velocity</div>
-            </div>
-            <div class="metric-terminal">
-                <h4>🎲 BEST TRADE</h4>
-                <div class="value" style="color: #3fb950;">${best_trade:+.2f}</div>
-                <div class="subtext">Peak Performance</div>
-            </div>
-            <div class="metric-terminal">
-                <h4>💀 WORST TRADE</h4>
-                <div class="value" style="color: #ff7b72;">${worst_trade:+.2f}</div>
-                <div class="subtext">Max Single Loss</div>
-            </div>
-            <div class="metric-terminal">
-                <h4>⏰ PEAK HOUR</h4>
-                <div class="value" style="color: #a5a5a5;">{most_active_hour:02d}:00</div>
-                <div class="subtext">Most Active Period</div>
-            </div>
-        </div>
-        """
-        st.markdown(metrics_html, unsafe_allow_html=True)
-        
-        st.divider()
-        
-        # ============================================
-        # ADVANCED FILTERING & SEARCH
-        # ============================================
-        st.markdown("### 🔍 INSTITUTIONAL TRADE FILTERS")
-        
-        # Multi-level filtering
+        # Summary stats cards
+        st.markdown("### 📊 MISSION STATISTICS")
         col1, col2, col3, col4, col5 = st.columns(5)
         
         with col1:
-            # Symbol filter
-            symbols = ['All'] + sorted(df['Symbol'].unique().tolist())
-            selected_symbol = st.selectbox("🎯 Asset", symbols, key="symbol_filter")
+            st.markdown(f"""
+            <div class="metric-card" style="padding: 15px;">
+                <span style="color: #ff6600; font-size: 0.8rem; text-transform: uppercase;">Total Trades</span>
+                <p style="color: #39ff14; font-size: 1.8rem; font-weight: bold; margin: 5px 0;">{total_trades}</p>
+            </div>
+            """, unsafe_allow_html=True)
         
         with col2:
-            # Strategy filter
-            strategies = ['All'] + sorted(df['Strategy'].unique().tolist())
-            selected_strategy = st.selectbox("⚙️ Strategy", strategies, key="strategy_filter")
+            wr_color = "#39ff14" if win_rate >= 50 else "#ff6600" if win_rate >= 30 else "#ff3333"
+            st.markdown(f"""
+            <div class="metric-card" style="padding: 15px;">
+                <span style="color: #ff6600; font-size: 0.8rem; text-transform: uppercase;">Win Rate</span>
+                <p style="color: {wr_color}; font-size: 1.8rem; font-weight: bold; margin: 5px 0;">{win_rate:.1f}%</p>
+                <span style="color: #888; font-size: 0.7rem;">{win_count}W / {loss_count}L</span>
+            </div>
+            """, unsafe_allow_html=True)
         
         with col3:
-            # P&L filter
-            pnl_filter = st.selectbox("💰 P&L Type", ['All', 'Winners Only', 'Losers Only', 'Break Even'], key="pnl_filter")
+            avg_color = "#39ff14" if avg_pnl >= 0 else "#ff3333"
+            st.markdown(f"""
+            <div class="metric-card" style="padding: 15px;">
+                <span style="color: #ff6600; font-size: 0.8rem; text-transform: uppercase;">Avg P&L</span>
+                <p style="color: {avg_color}; font-size: 1.8rem; font-weight: bold; margin: 5px 0;">${avg_pnl:+.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
         
         with col4:
-            # Date range filtering
-            if df['_entry_dt'].notna().any():
-                min_date = df['_entry_dt'].min().date()
-                max_date = df['_entry_dt'].max().date()
+            st.markdown(f"""
+            <div class="metric-card" style="padding: 15px;">
+                <span style="color: #ff6600; font-size: 0.8rem; text-transform: uppercase;">Best / Worst</span>
+                <p style="color: #39ff14; font-size: 1.2rem; font-weight: bold; margin: 5px 0;">${best_trade:+.2f}</p>
+                <p style="color: #ff3333; font-size: 1.2rem; font-weight: bold; margin: 0;">${worst_trade:+.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col5:
+            st.markdown(f"""
+            <div class="metric-card" style="padding: 15px;">
+                <span style="color: #ff6600; font-size: 0.8rem; text-transform: uppercase;">Avg Hold Time</span>
+                <p style="color: #39ff14; font-size: 1.8rem; font-weight: bold; margin: 5px 0;">{avg_hold_time}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.divider()
+        
+        # Filters
+        st.markdown("### 🔍 FILTER TRADES")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            symbols = ['All'] + sorted(df['Symbol'].unique().tolist())
+            selected_symbol = st.selectbox("Symbol", symbols)
+        
+        with col2:
+            strategies = ['All'] + sorted(df['Strategy'].unique().tolist())
+            selected_strategy = st.selectbox("Strategy", strategies)
+        
+        with col3:
+            # Get date range
+            valid_dates = [t['_entry_dt'] for t in trade_data if t['_entry_dt']]
+            if valid_dates:
+                min_date = min(valid_dates).date()
+                max_date = max(valid_dates).date()
             else:
                 min_date = datetime.now().date()
                 max_date = datetime.now().date()
             
-            date_from = st.date_input("📅 From", min_date, min_value=min_date, max_value=max_date, key="date_from")
-        
-        with col5:
-            date_to = st.date_input("📅 To", max_date, min_value=min_date, max_value=max_date, key="date_to")
-        
-        # Advanced filters row
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            # Duration filter
-            duration_filter = st.selectbox("⏱️ Duration", ['All', '<1 hour', '1-6 hours', '6-24 hours', '>1 day'], key="duration_filter")
-        
-        with col2:
-            # Trade size filter
-            size_filter = st.selectbox("📏 Trade Size", ['All', 'Small (<$10)', 'Medium ($10-$50)', 'Large (>$50)'], key="size_filter")
-        
-        with col3:
-            # Streak filter
-            streak_filter = st.selectbox("🔥 Streak Position", ['All', 'Start of Streak', 'Mid Streak', 'End of Streak'], key="streak_filter")
+            date_from = st.date_input("From", min_date, min_value=min_date, max_value=max_date)
         
         with col4:
-            # Risk/Reward filter
-            rr_filter = st.selectbox("⚖️ Risk/Reward", ['All', 'High R/R (>2)', 'Good R/R (1-2)', 'Poor R/R (<1)'], key="rr_filter")
+            date_to = st.date_input("To", max_date, min_value=min_date, max_value=max_date)
         
-        # Apply all filters
+        # Apply filters
         filtered_df = df.copy()
-        
-        # Apply basic filters
         if selected_symbol != 'All':
             filtered_df = filtered_df[filtered_df['Symbol'] == selected_symbol]
-        
         if selected_strategy != 'All':
             filtered_df = filtered_df[filtered_df['Strategy'] == selected_strategy]
-        
-        if pnl_filter != 'All':
-            if pnl_filter == 'Winners Only':
-                filtered_df = filtered_df[filtered_df['Realized P&L'] > 0]
-            elif pnl_filter == 'Losers Only':
-                filtered_df = filtered_df[filtered_df['Realized P&L'] < 0]
-            elif pnl_filter == 'Break Even':
-                filtered_df = filtered_df[filtered_df['Realized P&L'] == 0]
-        
-        # Date filter
-        if date_from and date_to and filtered_df['_entry_dt'].notna().any():
+        if date_from and date_to:
             filtered_df = filtered_df[
                 (filtered_df['_entry_dt'].dt.date >= date_from) & 
                 (filtered_df['_entry_dt'].dt.date <= date_to)
             ]
         
-        # Duration filter
-        if duration_filter != 'All':
-            if duration_filter == '<1 hour':
-                filtered_df = filtered_df[filtered_df['_duration_seconds'] < 3600]
-            elif duration_filter == '1-6 hours':
-                filtered_df = filtered_df[(filtered_df['_duration_seconds'] >= 3600) & (filtered_df['_duration_seconds'] < 21600)]
-            elif duration_filter == '6-24 hours':
-                filtered_df = filtered_df[(filtered_df['_duration_seconds'] >= 21600) & (filtered_df['_duration_seconds'] < 86400)]
-            elif duration_filter == '>1 day':
-                filtered_df = filtered_df[filtered_df['_duration_seconds'] >= 86400]
+        # Remove internal columns for display
+        display_df = filtered_df.drop(columns=['_entry_dt', '_exit_dt'], errors='ignore')
         
-        # Size filter
-        if size_filter != 'All':
-            if size_filter == 'Small (<$10)':
-                filtered_df = filtered_df[filtered_df['Entry Value'] < 10]
-            elif size_filter == 'Medium ($10-$50)':
-                filtered_df = filtered_df[(filtered_df['Entry Value'] >= 10) & (filtered_df['Entry Value'] <= 50)]
-            elif size_filter == 'Large (>$50)':
-                filtered_df = filtered_df[filtered_df['Entry Value'] > 50]
-        
-        # Risk/Reward filter
-        if rr_filter != 'All':
-            if rr_filter == 'High R/R (>2)':
-                filtered_df = filtered_df[filtered_df['Risk/Reward'] > 2]
-            elif rr_filter == 'Good R/R (1-2)':
-                filtered_df = filtered_df[(filtered_df['Risk/Reward'] >= 1) & (filtered_df['Risk/Reward'] <= 2)]
-            elif rr_filter == 'Poor R/R (<1)':
-                filtered_df = filtered_df[filtered_df['Risk/Reward'] < 1]
-        
-        # ============================================
-        # EXPORT & DISPLAY CONTROLS
-        # ============================================
-        col1, col2, col3 = st.columns([2, 2, 3])
-        
+        # Export button
+        col1, col2 = st.columns([1, 4])
         with col1:
-            # Advanced CSV export with multiple formats
-            export_format = st.selectbox("📄 Export Format", ['Standard CSV', 'Excel Compatible', 'Trading Journal', 'Tax Report'], key="export_format")
-        
-        with col2:
-            # Create export data based on format
-            if export_format == 'Standard CSV':
-                export_df = filtered_df.drop(columns=[col for col in filtered_df.columns if col.startswith('_')], errors='ignore')
-            elif export_format == 'Excel Compatible':
-                export_df = filtered_df.drop(columns=[col for col in filtered_df.columns if col.startswith('_')], errors='ignore')
-                # Add formulas and summaries
-                summary_row = pd.Series({
-                    'Trade #': 'TOTAL',
-                    'Realized P&L': filtered_df['Realized P&L'].sum(),
-                    'P&L %': filtered_df['P&L %'].mean(),
-                })
-                export_df = pd.concat([export_df, summary_row.to_frame().T], ignore_index=True)
-            elif export_format == 'Trading Journal':
-                export_df = filtered_df[['Trade #', 'Symbol', 'Entry Time', 'Exit Time', 'Side', 
-                                       'Entry Price', 'Exit Price', 'Position Size', 'Realized P&L', 
-                                       'Strategy', 'Duration']].copy()
-            else:  # Tax Report
-                export_df = filtered_df[['Trade #', 'Symbol', 'Exit Time', 'Realized P&L', 'Entry Value', 'Exit Value']].copy()
-            
-            csv_data = export_df.to_csv(index=False)
-            filename = f"trade_history_{export_format.lower().replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
-            
+            csv = display_df.to_csv(index=False)
             st.download_button(
-                label=f"📥 EXPORT {export_format.upper()}",
-                data=csv_data,
-                file_name=filename,
+                label="📥 EXPORT CSV",
+                data=csv,
+                file_name=f"trade_history_{datetime.now().strftime('%Y%m%d')}.csv",
                 mime="text/csv",
                 use_container_width=True
             )
         
-        with col3:
+        with col2:
             st.markdown(f"""
-            <div style="text-align: right; padding: 12px; background: #0d1117; border: 1px solid #21262d; border-radius: 6px;">
-                <div style="color: #8b949e; font-size: 0.8rem; font-family: monospace;">FILTERED RESULTS</div>
-                <div style="color: #58a6ff; font-size: 1.4rem; font-weight: bold; font-family: monospace;">
-                    {len(filtered_df):,} / {total_trades:,}
-                </div>
-                <div style="color: #8b949e; font-size: 0.7rem; font-family: monospace;">
-                    Showing {len(filtered_df)/total_trades*100:.1f}% of trades
-                </div>
+            <div style="text-align: right; padding: 10px 0;">
+                <span style="color: #888;">Showing </span>
+                <span style="color: #39ff14; font-weight: bold;">{len(display_df)}</span>
+                <span style="color: #888;"> of {total_trades} trades</span>
             </div>
             """, unsafe_allow_html=True)
         
         st.divider()
         
-        # ============================================
-        # PROFESSIONAL TRADE TABLE WITH ADVANCED FEATURES
-        # ============================================
-        st.markdown("### 📊 INSTITUTIONAL TRADE TABLE")
+        # Trade History Table
+        st.markdown("### 📋 TRADE HISTORY")
         
-        # Sorting controls
-        col1, col2, col3 = st.columns([2, 1, 1])
+        # Style the dataframe
+        def style_pnl(val):
+            if isinstance(val, (int, float)):
+                color = '#39ff14' if val >= 0 else '#ff3333'
+                return f'color: {color}; font-weight: bold;'
+            return ''
         
-        with col1:
-            sort_columns = ['Trade #', 'Entry Time', 'Symbol', 'Realized P&L', 'P&L %', 'Duration', 'Entry Value', 'Running P&L']
-            sort_by = st.selectbox("🔄 Sort By", sort_columns, key="sort_by")
+        # Create display columns with formatted values
+        table_df = display_df.copy()
         
-        with col2:
-            sort_order = st.selectbox("📶 Order", ['Descending', 'Ascending'], key="sort_order")
-        
-        with col3:
-            show_advanced = st.checkbox("🔬 Show Advanced Columns", value=False, key="show_advanced")
-        
-        # Apply sorting
-        ascending = (sort_order == 'Ascending')
-        if sort_by in filtered_df.columns:
-            sorted_df = filtered_df.sort_values(sort_by, ascending=ascending)
-        else:
-            sorted_df = filtered_df
-        
-        # Column selection based on advanced mode
-        if show_advanced:
-            display_columns = [
-                'Trade #', 'Symbol', 'Side', 'Entry Time', 'Exit Time', 'Duration',
-                'Entry Price', 'Exit Price', 'Position Size', 'Entry Value', 'Exit Value',
-                'Realized P&L', 'P&L %', 'Running P&L', 'Strategy', 'Current Streak',
-                'Risk/Reward', 'Entry Hour', 'Exit Hour'
-            ]
-        else:
-            display_columns = [
-                'Trade #', 'Symbol', 'Side', 'Entry Time', 'Exit Time', 'Duration',
-                'Entry Price', 'Exit Price', 'Realized P&L', 'P&L %', 'Strategy'
-            ]
-        
-        # Create display dataframe
-        display_df = sorted_df[display_columns].copy()
-        
-        # Format display values for professional appearance
-        def format_price_professional(val):
-            if pd.isna(val) or val == 0:
-                return "—"
-            elif val < 0.001:
-                return f"{val:.8f}"
-            elif val < 0.01:
-                return f"{val:.6f}"
+        # Format numeric columns
+        def format_price(val):
+            if val < 0.01:
+                return f"${val:.6f}"
             elif val < 1:
-                return f"{val:.4f}"
-            elif val < 1000:
-                return f"{val:,.2f}"
+                return f"${val:.4f}"
             else:
-                return f"{val:,.2f}"
+                return f"${val:,.2f}"
         
-        def format_pnl_professional(val):
-            if pd.isna(val):
-                return "—"
-            return f"${val:+,.2f}"
+        table_df['Entry Price'] = table_df['Entry Price'].apply(format_price)
+        table_df['Exit Price'] = table_df['Exit Price'].apply(format_price)
+        table_df['Position Size'] = table_df['Position Size'].apply(lambda x: f"{x:.6f}")
+        table_df['Entry Value'] = table_df['Entry Value'].apply(lambda x: f"${x:.2f}")
+        table_df['Exit Value'] = table_df['Exit Value'].apply(lambda x: f"${x:.2f}")
+        table_df['Realized P&L'] = table_df['Realized P&L'].apply(lambda x: f"${x:+.2f}")
+        table_df['P&L %'] = table_df['P&L %'].apply(lambda x: f"{x:+.2f}%")
         
-        def format_percentage_professional(val):
-            if pd.isna(val):
-                return "—"
-            return f"{val:+.2f}%"
+        # Color code P&L columns
+        def color_pnl_cell(val):
+            if isinstance(val, str):
+                if val.startswith('$+'):
+                    return 'color: #39ff14; font-weight: bold;'
+                elif val.startswith('$-'):
+                    return 'color: #ff3333; font-weight: bold;'
+                elif val.endswith('%'):
+                    try:
+                        num = float(val.rstrip('%'))
+                        return 'color: #39ff14; font-weight: bold;' if num >= 0 else 'color: #ff3333; font-weight: bold;'
+                    except:
+                        pass
+            return ''
         
-        # Apply formatting
-        if 'Entry Price' in display_df.columns:
-            display_df['Entry Price'] = display_df['Entry Price'].apply(format_price_professional)
-        if 'Exit Price' in display_df.columns:
-            display_df['Exit Price'] = display_df['Exit Price'].apply(format_price_professional)
-        if 'Position Size' in display_df.columns:
-            display_df['Position Size'] = display_df['Position Size'].apply(lambda x: f"{x:.6f}" if pd.notna(x) else "—")
-        if 'Entry Value' in display_df.columns:
-            display_df['Entry Value'] = display_df['Entry Value'].apply(lambda x: f"${x:.2f}" if pd.notna(x) else "—")
-        if 'Exit Value' in display_df.columns:
-            display_df['Exit Value'] = display_df['Exit Value'].apply(lambda x: f"${x:.2f}" if pd.notna(x) else "—")
-        if 'Realized P&L' in display_df.columns:
-            display_df['Realized P&L'] = display_df['Realized P&L'].apply(format_pnl_professional)
-        if 'P&L %' in display_df.columns:
-            display_df['P&L %'] = display_df['P&L %'].apply(format_percentage_professional)
-        if 'Running P&L' in display_df.columns:
-            display_df['Running P&L'] = display_df['Running P&L'].apply(format_pnl_professional)
-        if 'Risk/Reward' in display_df.columns:
-            display_df['Risk/Reward'] = display_df['Risk/Reward'].apply(lambda x: f"{x:.2f}" if pd.notna(x) and x != 0 else "—")
+        # Apply styling
+        styled_table = table_df.style.applymap(color_pnl_cell, subset=['Realized P&L', 'P&L %'])
         
-        # Pagination for large datasets
-        page_size = st.selectbox("📄 Rows per page", [10, 20, 50, 100], index=1, key="page_size")
-        
-        if len(display_df) > page_size:
-            total_pages = (len(display_df) + page_size - 1) // page_size
+        # Display table with pagination if needed
+        if len(table_df) > 20:
+            page_size = 20
+            total_pages = (len(table_df) + page_size - 1) // page_size
             
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
-                current_page = st.number_input(
-                    f"Page (1-{total_pages})", 
-                    min_value=1, 
-                    max_value=total_pages, 
-                    value=1,
-                    key="current_page"
-                )
+                page = st.number_input("Page", min_value=1, max_value=total_pages, value=1)
             
-            start_idx = (current_page - 1) * page_size
-            end_idx = min(start_idx + page_size, len(display_df))
-            page_df = display_df.iloc[start_idx:end_idx]
+            start_idx = (page - 1) * page_size
+            end_idx = min(start_idx + page_size, len(table_df))
             
-            # Page info
+            st.dataframe(
+                styled_table.iloc[start_idx:end_idx],
+                use_container_width=True,
+                hide_index=True,
+                height=600
+            )
+            
             st.markdown(f"""
-            <div style="text-align: center; color: #8b949e; font-size: 0.8rem; font-family: monospace; margin: 10px 0;">
-                📄 PAGE {current_page} OF {total_pages} | ROWS {start_idx+1:,}-{end_idx:,} OF {len(display_df):,}
+            <div style="text-align: center; color: #888; font-size: 0.8rem;">
+                Page {page} of {total_pages} | Rows {start_idx+1}-{end_idx} of {len(table_df)}
             </div>
             """, unsafe_allow_html=True)
         else:
-            page_df = display_df
-            st.markdown(f"""
-            <div style="text-align: center; color: #8b949e; font-size: 0.8rem; font-family: monospace; margin: 10px 0;">
-                📊 DISPLAYING ALL {len(display_df):,} TRADES
-            </div>
-            """, unsafe_allow_html=True)
+            st.dataframe(
+                styled_table,
+                use_container_width=True,
+                hide_index=True,
+                height=min(600, 60 + len(table_df) * 35)
+            )
         
-        # Professional styled dataframe
+        # Trade summary by symbol
+        st.divider()
+        st.markdown("### 📈 PERFORMANCE BY SYMBOL")
+        
+        symbol_stats = df.groupby('Symbol').agg({
+            'Realized P&L': ['count', 'sum', 'mean'],
+            'P&L %': 'mean'
+        }).round(2)
+        symbol_stats.columns = ['Trades', 'Total P&L', 'Avg P&L', 'Avg P&L %']
+        symbol_stats = symbol_stats.reset_index()
+        symbol_stats['Win Rate'] = df.groupby('Symbol').apply(
+            lambda x: (x['Realized P&L'] > 0).sum() / len(x) * 100
+        ).round(1).values
+        
+        # Sort by total P&L
+        symbol_stats = symbol_stats.sort_values('Total P&L', ascending=False)
+        
+        # Style the summary
+        def style_summary_pnl(val):
+            if isinstance(val, (int, float)):
+                color = '#39ff14' if val >= 0 else '#ff3333'
+                return f'color: {color}; font-weight: bold;'
+            return ''
+        
+        styled_summary = symbol_stats.style.applymap(
+            style_summary_pnl, subset=['Total P&L', 'Avg P&L', 'Avg P&L %']
+        ).format({
+            'Total P&L': '${:+.2f}',
+            'Avg P&L': '${:+.2f}',
+            'Avg P&L %': '{:+.2f}%',
+            'Win Rate': '{:.1f}%'
+        })
+        
         st.dataframe(
-            page_df,
+            styled_summary,
             use_container_width=True,
             hide_index=True,
-            height=min(800, 60 + len(page_df) * 40),
-            column_config={
-                "Trade #": st.column_config.NumberColumn("Trade #", width="small"),
-                "Symbol": st.column_config.TextColumn("Symbol", width="small"),
-                "Side": st.column_config.TextColumn("Side", width="small"),
-                "Realized P&L": st.column_config.TextColumn("P&L", width="medium"),
-                "P&L %": st.column_config.TextColumn("P&L %", width="small"),
-                "Entry Time": st.column_config.TextColumn("Entry Time", width="large"),
-                "Exit Time": st.column_config.TextColumn("Exit Time", width="large"),
-                "Duration": st.column_config.TextColumn("Duration", width="medium"),
-                "Strategy": st.column_config.TextColumn("Strategy", width="medium"),
-            }
+            height=200
         )
         
-        # ============================================
-        # TRADE DETAIL ANALYSIS (EXPANDABLE)
-        # ============================================
-        st.divider()
-        st.markdown("### 🔬 INDIVIDUAL TRADE ANALYSIS")
-        
-        if len(filtered_df) > 0:
-            # Trade selector
-            trade_options = [f"Trade #{row['Trade #']} - {row['Symbol']} - ${row['Realized P&L']:+.2f}" for _, row in filtered_df.iterrows()]
-            selected_trade_idx = st.selectbox("🎯 Select Trade for Analysis", 
-                                            range(len(trade_options)), 
-                                            format_func=lambda x: trade_options[x],
-                                            key="trade_selector")
-            
-            selected_trade = filtered_df.iloc[selected_trade_idx]
-            
-            # Comprehensive trade analysis
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown(f"""
-                <div class="trade-detail-expander">
-                <h4 style="color: #ff6b35; margin-bottom: 1rem;">📊 TRADE DETAILS</h4>
-                <table style="width: 100%; font-family: monospace; font-size: 0.85rem;">
-                <tr><td style="color: #8b949e;">Trade ID:</td><td style="color: #58a6ff;">#{selected_trade['Trade #']}</td></tr>
-                <tr><td style="color: #8b949e;">Symbol:</td><td style="color: #58a6ff;">{selected_trade['Symbol']}</td></tr>
-                <tr><td style="color: #8b949e;">Strategy:</td><td style="color: #f0883e;">{selected_trade['Strategy']}</td></tr>
-                <tr><td style="color: #8b949e;">Side:</td><td style="color: #a5a5a5;">{selected_trade['Side']}</td></tr>
-                <tr><td style="color: #8b949e;">Entry:</td><td style="color: #a5a5a5;">{selected_trade['Entry Time']}</td></tr>
-                <tr><td style="color: #8b949e;">Exit:</td><td style="color: #a5a5a5;">{selected_trade['Exit Time']}</td></tr>
-                <tr><td style="color: #8b949e;">Duration:</td><td style="color: #a5a5a5;">{selected_trade['Duration']}</td></tr>
-                <tr><td style="color: #8b949e;">Entry Price:</td><td style="color: #58a6ff;">${selected_trade['Entry Price']:,.6f}</td></tr>
-                <tr><td style="color: #8b949e;">Exit Price:</td><td style="color: #58a6ff;">${selected_trade['Exit Price']:,.6f}</td></tr>
-                <tr><td style="color: #8b949e;">Position Size:</td><td style="color: #58a6ff;">{selected_trade['Position Size']:.6f}</td></tr>
-                <tr><td style="color: #8b949e;">Entry Value:</td><td style="color: #58a6ff;">${selected_trade['Entry Value']:,.2f}</td></tr>
-                <tr><td style="color: #8b949e;">Exit Value:</td><td style="color: #58a6ff;">${selected_trade['Exit Value']:,.2f}</td></tr>
-                </table>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            with col2:
-                pnl_color = "#3fb950" if selected_trade['Realized P&L'] >= 0 else "#f85149"
-                streak_color = "#3fb950" if selected_trade['Streak Type'] == 'WIN' else "#f85149"
-                
-                st.markdown(f"""
-                <div class="trade-detail-expander">
-                <h4 style="color: #ff6b35; margin-bottom: 1rem;">💰 PERFORMANCE ANALYSIS</h4>
-                <table style="width: 100%; font-family: monospace; font-size: 0.85rem;">
-                <tr><td style="color: #8b949e;">P&L:</td><td style="color: {pnl_color}; font-weight: bold;">${selected_trade['Realized P&L']:+.2f}</td></tr>
-                <tr><td style="color: #8b949e;">P&L %:</td><td style="color: {pnl_color}; font-weight: bold;">{selected_trade['P&L %']:+.2f}%</td></tr>
-                <tr><td style="color: #8b949e;">Running P&L:</td><td style="color: {'#3fb950' if selected_trade['Running P&L'] >= 0 else '#f85149'};">${selected_trade['Running P&L']:+.2f}</td></tr>
-                <tr><td style="color: #8b949e;">Risk/Reward:</td><td style="color: #a5a5a5;">{selected_trade['Risk/Reward']:.2f}</td></tr>
-                <tr><td style="color: #8b949e;">Streak:</td><td style="color: {streak_color};">{selected_trade['Current Streak']} {selected_trade['Streak Type']}</td></tr>
-                <tr><td style="color: #8b949e;">Entry Hour:</td><td style="color: #a5a5a5;">{selected_trade['Entry Hour']:02d}:00 UTC</td></tr>
-                <tr><td style="color: #8b949e;">Exit Hour:</td><td style="color: #a5a5a5;">{selected_trade['Exit Hour']:02d}:00 UTC</td></tr>
-                <tr><td style="color: #8b949e;">Sequence:</td><td style="color: #a5a5a5;">{selected_trade['_sequence']}/{total_trades}</td></tr>
-                <tr><td style="color: #8b949e;">Winner:</td><td style="color: {'#3fb950' if selected_trade['Is Winner'] else '#f85149'};">{'✓ YES' if selected_trade['Is Winner'] else '✗ NO'}</td></tr>
-                </table>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        # ============================================
-        # ENHANCED ANALYTICS SECTION
-        # ============================================
-        st.divider()
-        st.markdown("### 📈 ENHANCED TRADE ANALYTICS")
-        
-        # Create three analysis columns
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.markdown("#### 🎯 ASSET PERFORMANCE")
-            
-            asset_performance = filtered_df.groupby('Asset').agg({
-                'Realized P&L': ['count', 'sum', 'mean'],
-                'P&L %': 'mean',
-                'Is Winner': 'sum'
-            }).round(3)
-            asset_performance.columns = ['Trades', 'Total P&L', 'Avg P&L', 'Avg P&L %', 'Wins']
-            asset_performance['Win Rate'] = (asset_performance['Wins'] / asset_performance['Trades'] * 100).round(1)
-            asset_performance = asset_performance.sort_values('Total P&L', ascending=False)
-            
-            # Format for display
-            asset_display = asset_performance.copy()
-            asset_display['Total P&L'] = asset_display['Total P&L'].apply(lambda x: f"${x:+.2f}")
-            asset_display['Avg P&L'] = asset_display['Avg P&L'].apply(lambda x: f"${x:+.2f}")
-            asset_display['Avg P&L %'] = asset_display['Avg P&L %'].apply(lambda x: f"{x:+.2f}%")
-            asset_display['Win Rate'] = asset_display['Win Rate'].apply(lambda x: f"{x:.1f}%")
-            
-            st.dataframe(asset_display, use_container_width=True)
-        
-        with col2:
-            st.markdown("#### ⚡ STRATEGY PERFORMANCE")
-            
-            strategy_performance = filtered_df.groupby('Strategy').agg({
-                'Realized P&L': ['count', 'sum', 'mean'],
-                'Is Winner': 'sum'
-            }).round(3)
-            strategy_performance.columns = ['Trades', 'Total P&L', 'Avg P&L', 'Wins']
-            strategy_performance['Win Rate'] = (strategy_performance['Wins'] / strategy_performance['Trades'] * 100).round(1)
-            strategy_performance = strategy_performance.sort_values('Total P&L', ascending=False)
-            
-            # Format for display
-            strategy_display = strategy_performance.copy()
-            strategy_display['Total P&L'] = strategy_display['Total P&L'].apply(lambda x: f"${x:+.2f}")
-            strategy_display['Avg P&L'] = strategy_display['Avg P&L'].apply(lambda x: f"${x:+.2f}")
-            strategy_display['Win Rate'] = strategy_display['Win Rate'].apply(lambda x: f"{x:.1f}%")
-            
-            st.dataframe(strategy_display, use_container_width=True)
-        
-        with col3:
-            st.markdown("#### ⏰ TIMING ANALYSIS")
-            
-            # Hour-by-hour performance
-            hour_performance = filtered_df.groupby('Entry Hour').agg({
-                'Realized P&L': ['count', 'mean'],
-                'Is Winner': 'mean'
-            }).round(3)
-            hour_performance.columns = ['Trades', 'Avg P&L', 'Win Rate']
-            hour_performance['Win Rate'] = (hour_performance['Win Rate'] * 100).round(1)
-            hour_performance = hour_performance.sort_values('Avg P&L', ascending=False)
-            
-            # Format for display
-            hour_display = hour_performance.copy()
-            hour_display['Avg P&L'] = hour_display['Avg P&L'].apply(lambda x: f"${x:+.2f}")
-            hour_display['Win Rate'] = hour_display['Win Rate'].apply(lambda x: f"{x:.1f}%")
-            hour_display.index = [f"{h:02d}:00" for h in hour_display.index]
-            
-            st.dataframe(hour_display, use_container_width=True)
-        
-        # ============================================
-        # RUNNING P&L CHART
-        # ============================================
-        st.divider()
-        st.markdown("### 📊 RUNNING P&L BALANCE")
-        
-        # Create running P&L chart
-        running_pnl_data = filtered_df.sort_values('_sequence')[['Trade #', 'Running P&L', 'Realized P&L', 'Symbol']].copy()
-        
-        fig = go.Figure()
-        
-        # Running balance line
-        fig.add_trace(go.Scatter(
-            x=running_pnl_data['Trade #'],
-            y=running_pnl_data['Running P&L'],
-            mode='lines+markers',
-            name='Running P&L',
-            line=dict(color='#58a6ff', width=3),
-            marker=dict(size=6),
-            hovertemplate='<b>Trade #%{x}</b><br>Running P&L: $%{y:+.2f}<extra></extra>'
-        ))
-        
-        # Add zero line
-        fig.add_hline(y=0, line_dash="dash", line_color="#8b949e", annotation_text="Break Even")
-        
-        # Individual trade markers
-        colors = ['#3fb950' if pnl > 0 else '#f85149' for pnl in running_pnl_data['Realized P&L']]
-        fig.add_trace(go.Scatter(
-            x=running_pnl_data['Trade #'],
-            y=running_pnl_data['Running P&L'],
-            mode='markers',
-            name='Trades',
-            marker=dict(
-                color=colors,
-                size=8,
-                line=dict(width=1, color='white')
-            ),
-            hovertemplate='<b>%{customdata[0]}</b><br>Trade P&L: $%{customdata[1]:+.2f}<br>Running Total: $%{y:+.2f}<extra></extra>',
-            customdata=list(zip(running_pnl_data['Symbol'], running_pnl_data['Realized P&L']))
-        ))
-        
-        fig.update_layout(
-            title=dict(
-                text="📈 CUMULATIVE P&L PROGRESSION",
-                font=dict(size=18, color='#ff6b35', family='monospace')
-            ),
-            xaxis=dict(
-                title="Trade Sequence",
-                gridcolor='#21262d',
-                color='#8b949e',
-                tickfont=dict(family='monospace')
-            ),
-            yaxis=dict(
-                title="Running P&L ($)",
-                gridcolor='#21262d',
-                color='#8b949e',
-                tickfont=dict(family='monospace')
-            ),
-            plot_bgcolor='#0d1117',
-            paper_bgcolor='#0d1117',
-            font=dict(color='#c9d1d9', family='monospace'),
-            legend=dict(
-                bgcolor='rgba(13, 17, 23, 0.8)',
-                bordercolor='#21262d',
-                borderwidth=1
-            ),
-            hovermode='x unified'
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # ============================================
-        # MISSION SUMMARY STATISTICS
-        # ============================================
-        st.divider()
-        st.markdown("### 🎯 MISSION INTELLIGENCE SUMMARY")
-        
-        # Final mission stats
-        total_filtered_pnl = filtered_df['Realized P&L'].sum()
-        best_streak = filtered_df.groupby(['Streak Type', 'Current Streak']).size().reset_index()
-        best_win_streak = best_streak[best_streak['Streak Type'] == 'WIN']['Current Streak'].max() if len(best_streak[best_streak['Streak Type'] == 'WIN']) > 0 else 0
-        best_loss_streak = best_streak[best_streak['Streak Type'] == 'LOSS']['Current Streak'].max() if len(best_streak[best_streak['Streak Type'] == 'LOSS']) > 0 else 0
-        
-        avg_trade_duration = filtered_df['_duration_seconds'].mean()
-        if avg_trade_duration < 3600:
-            duration_desc = "High-frequency scalping"
-        elif avg_trade_duration < 86400:
-            duration_desc = "Intraday trading"
-        else:
-            duration_desc = "Position trading"
-        
-        most_profitable_asset = filtered_df.groupby('Asset')['Realized P&L'].sum().idxmax() if len(filtered_df) > 0 else "N/A"
-        most_profitable_strategy = filtered_df.groupby('Strategy')['Realized P&L'].sum().idxmax() if len(filtered_df) > 0 else "N/A"
-        
-        st.markdown(f"""
-        <div class="trade-detail-expander">
-        <h4 style="color: #ff6b35; text-align: center; margin-bottom: 1.5rem;">🎯 MISSION INTELLIGENCE REPORT</h4>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-            <div>
-                <h5 style="color: #58a6ff;">📊 PERFORMANCE OVERVIEW</h5>
-                <p><strong>Filtered P&L:</strong> <span style="color: {'#3fb950' if total_filtered_pnl >= 0 else '#f85149'};">${total_filtered_pnl:+.2f}</span></p>
-                <p><strong>Win Rate:</strong> {len(filtered_df[filtered_df['Is Winner']])/len(filtered_df)*100:.1f}% ({len(filtered_df[filtered_df['Is Winner']])}/{len(filtered_df)})</p>
-                <p><strong>Best Win Streak:</strong> {best_win_streak} consecutive wins</p>
-                <p><strong>Max Loss Streak:</strong> {best_loss_streak} consecutive losses</p>
-                <p><strong>Trading Style:</strong> {duration_desc}</p>
-            </div>
-            <div>
-                <h5 style="color: #58a6ff;">🏆 TOP PERFORMERS</h5>
-                <p><strong>Best Asset:</strong> {most_profitable_asset}</p>
-                <p><strong>Best Strategy:</strong> {most_profitable_strategy}</p>
-                <p><strong>Avg Hold Time:</strong> {avg_hold_time}</p>
-                <p><strong>Trade Frequency:</strong> {trades_per_day:.1f} trades/day</p>
-                <p><strong>Peak Activity:</strong> {most_active_hour:02d}:00 UTC</p>
-            </div>
-        </div>
-        <div style="text-align: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #21262d;">
-            <p style="color: #8b949e; font-size: 0.8rem; font-family: monospace;">
-                🚀 INSTITUTIONAL TRADING JOURNAL • NASA MISSION CONTROL AESTHETICS<br>
-                Data integrity verified • Real-time performance tracking • Professional analytics
-            </p>
-        </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
     else:
-        # No trades available - Professional empty state
+        # No trades available
         st.markdown("""
-        <div class="metric-terminal" style="text-align: center; padding: 3rem; margin: 2rem 0;">
-            <div style="font-size: 4rem; color: #21262d; margin-bottom: 1rem;">📭</div>
-            <h3 style="color: #ff6b35; margin-bottom: 1rem;">MISSION LOG EMPTY</h3>
-            <p style="color: #8b949e; font-size: 1.1rem; margin-bottom: 1.5rem;">
-                No trade history detected. The institutional journal is ready to capture trades.
-            </p>
-            <div style="background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 1rem; margin-top: 2rem;">
-                <h4 style="color: #58a6ff; margin-bottom: 0.5rem;">🎯 SYSTEM STATUS</h4>
-                <p style="color: #8b949e; font-size: 0.9rem; margin: 0;">
-                    Trading bot monitoring for entry signals...<br>
-                    Professional analytics will activate upon first trade execution.
-                </p>
-            </div>
+        <div class="metric-card" style="border-color: #ff6600; text-align: center; padding: 50px;">
+            <h4 style="color: #ff6600; font-size: 1.5rem;">📭 NO TRADE HISTORY</h4>
+            <p style="color: #888; margin-top: 20px;">The mission log is empty. Trades will appear here once executed.</p>
+            <p style="color: #555; font-size: 0.9rem; margin-top: 15px;">Bot is scanning for entry signals...</p>
         </div>
         """, unsafe_allow_html=True)
 
