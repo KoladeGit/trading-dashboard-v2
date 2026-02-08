@@ -1461,19 +1461,19 @@ with tab5:
     period_col1, period_col2, period_col3, period_col4, period_col5 = st.columns(5)
     
     with period_col1:
-        all_time_btn = st.button("🌌 ALL TIME", use_container_width=True, 
+        all_time_btn = st.button("🌌 ALL TIME", width='stretch', 
                                   type="primary" if st.session_state.get('perf_period') == 'all' else "secondary")
     with period_col2:
-        days30_btn = st.button("📅 30 DAYS", use_container_width=True,
+        days30_btn = st.button("📅 30 DAYS", width='stretch',
                                type="primary" if st.session_state.get('perf_period') == '30d' else "secondary")
     with period_col3:
-        days7_btn = st.button("📆 7 DAYS", use_container_width=True,
+        days7_btn = st.button("📆 7 DAYS", width='stretch',
                               type="primary" if st.session_state.get('perf_period') == '7d' else "secondary")
     with period_col4:
-        days1_btn = st.button("⏰ 24 HOURS", use_container_width=True,
+        days1_btn = st.button("⏰ 24 HOURS", width='stretch',
                               type="primary" if st.session_state.get('perf_period') == '1d' else "secondary")
     with period_col5:
-        custom_btn = st.button("⚙️ CUSTOM", use_container_width=True,
+        custom_btn = st.button("⚙️ CUSTOM", width='stretch',
                                type="primary" if st.session_state.get('perf_period') == 'custom' else "secondary")
     
     # Set default period
@@ -1807,7 +1807,7 @@ with tab5:
             showlegend=False
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
         
         st.divider()
         
@@ -1916,7 +1916,7 @@ with tab5:
             </div>
             """, unsafe_allow_html=True)
         
-        st.plotly_chart(fig_hist, use_container_width=True)
+        st.plotly_chart(fig_hist, width='stretch')
         
         st.divider()
         
@@ -2592,7 +2592,7 @@ with tab6:
                 data=csv_data,
                 file_name=filename,
                 mime="text/csv",
-                use_container_width=True
+                width='stretch'
             )
         
         with col3:
@@ -2734,7 +2734,7 @@ with tab6:
         # Professional styled dataframe
         st.dataframe(
             page_df,
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
             height=min(800, 60 + len(page_df) * 40),
             column_config={
@@ -2839,7 +2839,7 @@ with tab6:
             asset_display['Avg P&L %'] = asset_display['Avg P&L %'].apply(lambda x: f"{x:+.2f}%")
             asset_display['Win Rate'] = asset_display['Win Rate'].apply(lambda x: f"{x:.1f}%")
             
-            st.dataframe(asset_display, use_container_width=True)
+            st.dataframe(asset_display, width='stretch')
         
         with col2:
             st.markdown("#### ⚡ STRATEGY PERFORMANCE")
@@ -2858,7 +2858,7 @@ with tab6:
             strategy_display['Avg P&L'] = strategy_display['Avg P&L'].apply(lambda x: f"${x:+.2f}")
             strategy_display['Win Rate'] = strategy_display['Win Rate'].apply(lambda x: f"{x:.1f}%")
             
-            st.dataframe(strategy_display, use_container_width=True)
+            st.dataframe(strategy_display, width='stretch')
         
         with col3:
             st.markdown("#### ⏰ TIMING ANALYSIS")
@@ -2878,7 +2878,7 @@ with tab6:
             hour_display['Win Rate'] = hour_display['Win Rate'].apply(lambda x: f"{x:.1f}%")
             hour_display.index = [f"{h:02d}:00" for h in hour_display.index]
             
-            st.dataframe(hour_display, use_container_width=True)
+            st.dataframe(hour_display, width='stretch')
         
         # ============================================
         # RUNNING P&L CHART
@@ -2949,7 +2949,7 @@ with tab6:
             hovermode='x unified'
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
         
         # ============================================
         # MISSION SUMMARY STATISTICS
@@ -3149,7 +3149,7 @@ with tab4:
         strategy_df = pd.DataFrame(real_strategy_data)
         st.dataframe(
             strategy_df,
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
             height=300
         )
