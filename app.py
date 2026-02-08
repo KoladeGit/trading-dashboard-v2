@@ -14,13 +14,18 @@ from datetime import datetime, timedelta
 import json
 import os
 
-# Import projection utilities
+# Import enhanced projection utilities
 from utils import (
     calculate_daily_returns,
     calculate_projections,
     run_monte_carlo_simulation,
     calculate_trade_statistics,
-    get_comprehensive_projections
+    get_comprehensive_projections,
+    load_all_trades_data,
+    calculate_real_balance,
+    calculate_moving_averages,
+    calculate_linear_regression_trend,
+    calculate_volatility_metrics
 )
 
 # Import enhanced live position tracker
@@ -79,8 +84,10 @@ def load_trades_from_jsonl():
     
     return trades
 
+# Load real data using enhanced functions
 BOT_DATA = load_bot_data()
-ALL_TRADES = load_trades_from_jsonl()
+ALL_TRADES = load_all_trades_data()  # Load all 30+ trades from both sources
+REAL_CURRENT_BALANCE, REAL_STARTING_BALANCE, REAL_TOTAL_PNL = calculate_real_balance()
 
 # ============================================
 # PERFORMANCE METRICS CALCULATION FUNCTIONS
@@ -284,9 +291,13 @@ def calculate_performance_metrics(trades, starting_balance, current_balance, per
         'std_dev': std_dev,
         'equity_curve': equity_curve
     }
-TOTAL_BALANCE = BOT_DATA.get('account', {}).get('total_usd', 349)
-STARTING_BALANCE = BOT_DATA.get('trading_state', {}).get('starting_balance', 376.26)
-CURRENT_PNL = TOTAL_BALANCE - STARTING_BALANCE
+# Use real calculated balances instead of hardcoded values
+TOTAL_BALANCE = REAL_CURRENT_BALANCE
+STARTING_BALANCE = REAL_STARTING_BALANCE
+CURRENT_PNL = REAL_TOTAL_PNL
+
+print(f"🔍 DEBUG: Real balance calculation - Starting: ${STARTING_BALANCE:.2f}, Current: ${TOTAL_BALANCE:.2f}, P&L: ${CURRENT_PNL:.2f}")
+print(f"🔍 DEBUG: Loaded {len(ALL_TRADES)} total trades from all sources")
 
 # Capital allocations
 POLYMARKET_ALLOCATION = round(TOTAL_BALANCE * 0.30, 2)  # 30%
@@ -611,27 +622,50 @@ with tab1:
         )
     
     with col3:
-        # Real expected daily based on 30 actual trades
-        trade_stats = calculate_trade_statistics(ALL_TRADES if ALL_TRADES else BOT_DATA.get('recent_trades', []))
-        
-        if trade_stats and trade_stats['total_trades'] >= 5:
-            # Real mathematical expectancy from actual trades
-            expectancy_per_trade = trade_stats['expectancy']
-            daily_stats = calculate_daily_returns(ALL_TRADES if ALL_TRADES else BOT_DATA.get('recent_trades', []), TOTAL_BALANCE, STARTING_BALANCE)
+        # Real expected daily based on mathematical analysis of all trades
+        if len(ALL_TRADES) >= 10:
+            # Use comprehensive projections for accurate calculations
+            comprehensive_projections = get_comprehensive_projections(ALL_TRADES, TOTAL_BALANCE, STARTING_BALANCE)
             
-            if daily_stats:
+            if comprehensive_projections:
+                trade_stats = comprehensive_projections['trade_stats']
+                daily_stats = comprehensive_projections['daily_stats']
+                
+                # Mathematical expectancy per trade
+                expectancy_per_trade = trade_stats['expectancy']
                 real_daily_trades = daily_stats['avg_trades_per_day']
+                
+                # Expected daily P&L = expectancy × trades per day
                 expected_daily = expectancy_per_trade * real_daily_trades
-                daily_label = f"REAL: {real_daily_trades:.1f} trades/day"
+                
+                # Check if trend analysis is available for trend-adjusted expectation
+                trend_analysis = comprehensive_projections.get('trend_analysis', {})
+                if trend_analysis and 'daily_trend_pnl' in trend_analysis:
+                    trend_daily_pnl = trend_analysis['daily_trend_pnl']
+                    trend_strength = trend_analysis.get('current_trend_strength', 0)
+                    
+                    # Combine expectancy with trend (weighted by trend strength)
+                    if trend_strength > 0.3:  # Only use trend if reasonably strong
+                        expected_daily = (expected_daily * (1 - trend_strength)) + (trend_daily_pnl * trend_strength)
+                        daily_label = f"TREND-ADJ: {real_daily_trades:.1f} tpd"
+                    else:
+                        daily_label = f"EXPECTANCY: {real_daily_trades:.1f} tpd"
+                else:
+                    daily_label = f"MATHEMATICAL: {real_daily_trades:.1f} tpd"
             else:
-                expected_daily = expectancy_per_trade * 2  # Conservative estimate
-                daily_label = "REAL EXPECTANCY"
+                # Fallback to simple calculation
+                trade_stats = calculate_trade_statistics(ALL_TRADES)
+                if trade_stats:
+                    expected_daily = trade_stats['expectancy'] * 2  # Conservative 2 trades/day
+                    daily_label = "EXPECTANCY FALLBACK"
+                else:
+                    expected_daily = CURRENT_PNL / max(len(ALL_TRADES) / 2, 1)
+                    daily_label = "ACTUAL AVERAGE"
         else:
-            # Still use real PnL average if < 5 trades
-            total_pnl = sum(t.get('pnl', 0) for t in (ALL_TRADES if ALL_TRADES else BOT_DATA.get('recent_trades', [])))
-            days_trading = max(len(ALL_TRADES if ALL_TRADES else BOT_DATA.get('recent_trades', [])) / 2, 1)
-            expected_daily = total_pnl / days_trading
-            daily_label = "ACTUAL AVG"
+            # Insufficient data for statistical analysis
+            total_trading_days = max(len(ALL_TRADES) / 2, 1)  # Estimate trading days
+            expected_daily = CURRENT_PNL / total_trading_days
+            daily_label = f"ACTUAL: {len(ALL_TRADES)} trades"
         
         daily_color = "normal" if expected_daily >= 0 else "inverse"
         st.metric(
@@ -642,20 +676,55 @@ with tab1:
         )
     
     with col4:
-        # Real expected monthly using compound daily returns
-        if trade_stats and trade_stats['total_trades'] >= 5:
-            daily_stats = calculate_daily_returns(ALL_TRADES if ALL_TRADES else BOT_DATA.get('recent_trades', []), TOTAL_BALANCE, STARTING_BALANCE)
-            if daily_stats:
-                # Real compound growth projection (not linear)
-                compound_monthly = TOTAL_BALANCE * ((1 + daily_stats['avg_daily_return']) ** 30) - TOTAL_BALANCE
-                expected_monthly = compound_monthly
-                monthly_label = "REAL COMPOUND GROWTH"
+        # Real expected monthly using mathematical compound growth models
+        if len(ALL_TRADES) >= 10 and 'comprehensive_projections' in locals():
+            if comprehensive_projections:
+                # Use 30-day mathematical projection
+                math_projections = comprehensive_projections['math_projections']
+                proj_30d = math_projections.get('30d', {})
+                
+                if 'projected' in proj_30d:
+                    expected_monthly = proj_30d['projected'] - TOTAL_BALANCE
+                    
+                    # Check if trend-adjusted projection is available
+                    if 'trend_adjusted' in proj_30d:
+                        trend_monthly = proj_30d['trend_adjusted'] - TOTAL_BALANCE
+                        trend_conf = proj_30d.get('trend_confidence', 0)
+                        if trend_conf > 0.3:
+                            expected_monthly = trend_monthly
+                            monthly_label = f"TREND: R²={trend_conf:.2f}"
+                        else:
+                            monthly_label = "COMPOUND GROWTH"
+                    else:
+                        monthly_label = "COMPOUND GROWTH"
+                else:
+                    # Fallback to daily compound calculation
+                    daily_stats = comprehensive_projections['daily_stats']
+                    if daily_stats and 'avg_daily_return' in daily_stats:
+                        compound_factor = (1 + daily_stats['avg_daily_return']) ** 30
+                        expected_monthly = TOTAL_BALANCE * compound_factor - TOTAL_BALANCE
+                        monthly_label = "DAILY COMPOUND"
+                    else:
+                        expected_monthly = expected_daily * 30
+                        monthly_label = "LINEAR FALLBACK"
             else:
                 expected_monthly = expected_daily * 30
                 monthly_label = "LINEAR PROJECTION"
         else:
-            expected_monthly = expected_daily * 30
-            monthly_label = "BASED ON ACTUAL P&L"
+            # Not enough data for statistical projections
+            if len(ALL_TRADES) >= 5:
+                # Simple compound calculation if we have some data
+                daily_stats = calculate_daily_returns(ALL_TRADES, TOTAL_BALANCE, STARTING_BALANCE)
+                if daily_stats and 'avg_daily_return' in daily_stats:
+                    compound_factor = (1 + daily_stats['avg_daily_return']) ** 30
+                    expected_monthly = TOTAL_BALANCE * compound_factor - TOTAL_BALANCE
+                    monthly_label = "COMPOUND (LIMITED)"
+                else:
+                    expected_monthly = expected_daily * 30
+                    monthly_label = "LINEAR ESTIMATE"
+            else:
+                expected_monthly = expected_daily * 30
+                monthly_label = "INSUFFICIENT DATA"
         
         monthly_color = "normal" if expected_monthly >= 0 else "inverse"
         st.metric(
@@ -673,13 +742,13 @@ with tab1:
     st.divider()
     
     # Row 2: REAL MATHEMATICAL PROJECTIONS - NO MORE FAKE DATA
-    st.subheader("📊 REAL MATHEMATICAL PROJECTIONS (Based on 30 Actual Trades)")
+    st.subheader(f"📊 REAL MATHEMATICAL PROJECTIONS (Based on {len(ALL_TRADES)} Actual Trades)")
     
-    # Use ALL real trades from bot_data.json
-    trades = ALL_TRADES if ALL_TRADES else BOT_DATA.get('recent_trades', [])
+    # Use ALL real trades loaded from enhanced data loading
+    trades = ALL_TRADES
     total_trades = len(trades)
     
-    # Use real comprehensive projections from utils.py
+    # Use real comprehensive projections with enhanced mathematical functions
     comprehensive_projections = get_comprehensive_projections(trades, TOTAL_BALANCE, STARTING_BALANCE)
     
     if comprehensive_projections and total_trades >= 10:
@@ -882,37 +951,53 @@ with tab1:
         real_profit_factor = trade_stats['profit_factor']
         real_expectancy = trade_stats['expectancy']
         
+        # Enhanced mathematical transparency with trend analysis
+        volatility_metrics = comprehensive_projections.get('volatility_metrics', {})
+        trend_analysis = comprehensive_projections.get('trend_analysis', {})
+        moving_averages = comprehensive_projections.get('moving_averages', {})
+        
         st.markdown(f"""
         <div class="terminal-bg" style="margin-top: 15px;">
-        <h4 style="color: #ff6600;">📐 REAL MATHEMATICAL ANALYSIS (30 ACTUAL TRADES)</h4>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <h4 style="color: #ff6600;">📐 ENHANCED MATHEMATICAL ANALYSIS ({total_trades} ACTUAL TRADES)</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
             <div>
-                <p style="color: #ff6600; font-weight: bold;">ACTUAL INPUT DATA:</p>
-                <p style="color: #39ff14; font-family: monospace; font-size: 0.85rem;">
+                <p style="color: #ff6600; font-weight: bold;">STATISTICAL INPUT:</p>
+                <p style="color: #39ff14; font-family: monospace; font-size: 0.8rem;">
                 • Sample: {total_trades} real trades<br>
                 • Win rate: {real_win_rate:.1f}% ({real_win_count}W/{real_loss_count}L)<br>
-                • Mean P&L: ${mean_pnl:.2f} ± ${std_pnl:.2f} (σ)<br>
+                • Mean P&L: ${mean_pnl:.2f} ± ${std_pnl:.2f}<br>
                 • Expectancy: ${real_expectancy:.2f}/trade<br>
-                • Trade frequency: {avg_daily_trades:.2f}/day<br>
+                • Trade freq: {avg_daily_trades:.2f}/day<br>
                 • Profit factor: {real_profit_factor:.2f}
                 </p>
             </div>
             <div>
-                <p style="color: #ff6600; font-weight: bold;">MATHEMATICAL METHODS:</p>
-                <p style="color: #39ff14; font-family: monospace; font-size: 0.85rem;">
-                • Monte Carlo: 5,000 bootstrapped simulations<br>
-                • Compound growth: (1+r)^days formula<br>
-                • Confidence bands: ±95% volatility<br>
-                • Real daily returns: {daily_stats['avg_daily_return']*100:.3f}%<br>
-                • Volatility: {daily_stats['volatility']*100:.2f}%/day<br>
+                <p style="color: #ff6600; font-weight: bold;">RISK METRICS:</p>
+                <p style="color: #39ff14; font-family: monospace; font-size: 0.8rem;">
+                • Daily volatility: {daily_stats['volatility']*100:.2f}%<br>
+                • VaR 95%: ${volatility_metrics.get('var_95', 0):.2f}<br>
+                • Max drawdown: ${volatility_metrics.get('max_drawdown', 0):.2f}<br>
+                • Sharpe ratio: {volatility_metrics.get('sharpe_ratio', 0):.2f}<br>
+                • Sortino ratio: {volatility_metrics.get('sortino_ratio', 0):.2f}<br>
                 • Trading days: {daily_stats['trading_days']}
+                </p>
+            </div>
+            <div>
+                <p style="color: #ff6600; font-weight: bold;">TREND ANALYSIS:</p>
+                <p style="color: #39ff14; font-family: monospace; font-size: 0.8rem;">
+                • Trend: {trend_analysis.get('trend_direction', 'unknown')}<br>
+                • R-squared: {trend_analysis.get('r_squared', 0):.3f}<br>
+                • Daily trend: ${trend_analysis.get('daily_trend_pnl', 0):.3f}<br>
+                • SMA-5: ${moving_averages.get('current_sma_5', 0):.2f}<br>
+                • EMA-10: ${moving_averages.get('current_ema_10', 0):.2f}<br>
+                • Methods: 6 integrated
                 </p>
             </div>
         </div>
         <p style="color: #888; font-size: 0.75rem; margin-top: 10px; border-top: 1px solid #333; padding-top: 10px;">
-        ⚠️ NO MORE FAKE DATA: All projections based on actual 30 trades from bot_data.json. 
-        Mathematical models: compound growth, bootstrapped Monte Carlo, volatility-adjusted confidence intervals.
-        Sample size (30) is sufficient for statistical reliability.
+        ✅ REAL DATA INTEGRATION: Mathematical models include compound growth, Monte Carlo (5k sims), 
+        linear regression trend analysis, moving averages, VaR/ES risk metrics, and volatility-adjusted confidence bands.
+        All calculations based on actual trading performance from {total_trades} completed trades.
         </p>
         </div>
         """, unsafe_allow_html=True)
@@ -958,11 +1043,11 @@ with tab1:
     
     st.divider()
     
-    # Row 3: Trade Statistics (Summary)
-    st.subheader("📈 TRADE STATISTICS (Summary - See 📜 TRADE HISTORY tab for full details)")
+    # Row 3: Enhanced Trade Statistics with Real Data
+    st.subheader(f"📈 COMPREHENSIVE TRADE STATISTICS ({len(ALL_TRADES)} Trades)")
     
-    # Calculate real trade stats from jsonl file or bot_data
-    trades = ALL_TRADES if ALL_TRADES else BOT_DATA.get('recent_trades', BOT_DATA.get('trades', []))
+    # Use the real loaded trade data
+    trades = ALL_TRADES
     winning_trades = [t for t in trades if t.get('pnl', 0) > 0]
     losing_trades = [t for t in trades if t.get('pnl', 0) <= 0]
     
@@ -1102,12 +1187,12 @@ with tab1:
     
     st.divider()
     
-    # Row 5: REAL Strategy Analysis from Actual Trades
-    st.subheader("🔬 REAL STRATEGY ANALYSIS (From 30 Actual Trades)")
+    # Row 5: REAL Strategy Analysis from All Actual Trades
+    st.subheader(f"🔬 REAL STRATEGY ANALYSIS ({len(ALL_TRADES)} Actual Trades)")
     
-    # Analyze actual strategies used in the 30 real trades
+    # Analyze actual strategies used in all real trades
     strategy_performance = {}
-    for trade in trades:
+    for trade in ALL_TRADES:
         strategy = trade.get('reason', 'unknown')
         if strategy not in strategy_performance:
             strategy_performance[strategy] = {'trades': 0, 'wins': 0, 'total_pnl': 0, 'pnl_list': []}
@@ -1144,10 +1229,10 @@ with tab1:
     # Sort by total P&L
     strategy_stats.sort(key=lambda x: x['total_pnl'], reverse=True)
     
-    st.markdown("""
+    st.markdown(f"""
     <div class="terminal-bg">
-    <h4 style="color: #ff6600;">REAL STRATEGY PERFORMANCE (From bot_data.json)</h4>
-    <p style="color: #39ff14; font-size: 0.9rem; margin-bottom: 15px;">✅ NO MORE FAKE DATA - Analysis of actual 30 trades</p>
+    <h4 style="color: #ff6600;">REAL STRATEGY PERFORMANCE (From trades.jsonl + dashboard.json)</h4>
+    <p style="color: #39ff14; font-size: 0.9rem; margin-bottom: 15px;">✅ REAL DATA - Analysis of actual {len(ALL_TRADES)} trades</p>
     
     <table style="width: 100%; color: #39ff14; font-family: 'IBM Plex Mono', monospace;">
     <tr style="border-bottom: 1px solid #333;">
