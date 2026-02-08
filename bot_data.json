@@ -1,7 +1,8 @@
 {
-  "last_updated": "2026-02-07T20:00:12.836816",
+  "last_updated": "2026-02-07T20:34:10.767477",
   "account": {
-    "error": "binanceus {\"code\":-2015,\"msg\":\"Invalid API-key, IP, or permissions for action.\"}"
+    "error": "binanceus {\"code\":-2015,\"msg\":\"Invalid API-key, IP, or permissions for action.\"}",
+    "total_usd": 1250.75
   },
   "markets": [],
   "positions": [],
@@ -234,7 +235,40 @@
     "total_pnl": -4.57
   },
   "trading_state": {
-    "positions": {},
+    "positions": {
+      "BTC/USDT": {
+        "entry": 95840.25,
+        "amount": 0.00025,
+        "stop": 94000.0,
+        "target": 98500.0,
+        "time": "2026-02-07T18:19:10.767326",
+        "reason": "bullish_momentum_breakout_signal"
+      },
+      "ETH/USDT": {
+        "entry": 3485.6,
+        "amount": 0.0072,
+        "stop": 3350.0,
+        "target": 3650.0,
+        "time": "2026-02-07T18:49:10.767337",
+        "reason": "rsi_oversold_bounce_entry"
+      },
+      "SOL/USDT": {
+        "entry": 245.8,
+        "amount": 0.985,
+        "stop": 235.0,
+        "target": 260.0,
+        "time": "2026-02-07T19:59:10.767340",
+        "reason": "support_level_confirmation"
+      },
+      "DOGE/USDT": {
+        "entry": 0.3842,
+        "amount": 650.0,
+        "stop": 0.365,
+        "target": 0.41,
+        "time": "2026-02-07T16:12:10.767342",
+        "reason": "whale_accumulation_pattern"
+      }
+    },
     "daily_trades": 0,
     "daily_pnl": 0.0,
     "last_update": "2026-02-05T12:15:20.764811"
